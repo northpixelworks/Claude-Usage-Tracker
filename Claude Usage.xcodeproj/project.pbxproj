@@ -167,6 +167,7 @@
 				de,
 				it,
 				pt,
+				"pt-BR",
 				ja,
 				ko,
 				"zh-ch",
