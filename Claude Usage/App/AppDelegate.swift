@@ -52,6 +52,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             SharedDataStore.shared.markWizardShown()
         }
 
+        // Allow recovery when macOS places menu bar items outside the visible area.
+        if UserDefaults.standard.bool(forKey: "openSettingsOnNextLaunch") {
+            UserDefaults.standard.set(false, forKey: "openSettingsOnNextLaunch")
+            let window = SettingsWindowBuilder.makeWindow(size: Constants.WindowSizes.settingsWindow)
+            window.title = "Claude Usage - Settings"
+            window.center()
+            window.isReleasedWhenClosed = false
+            setupWindow = window
+            NSApp.setActivationPolicy(.regular)
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+
         // Track first launch date for GitHub star prompt
         if SharedDataStore.shared.loadFirstLaunchDate() == nil {
             SharedDataStore.shared.saveFirstLaunchDate(Date())

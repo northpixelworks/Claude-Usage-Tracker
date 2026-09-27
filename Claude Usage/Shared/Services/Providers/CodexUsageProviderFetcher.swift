@@ -49,10 +49,12 @@ class CodexUsageProviderFetcher: UsageProviderFetcher {
             ]
 
             if let primary = response.rateLimit?.primaryWindow {
+                let isWeekly = primary.limitWindowSeconds == 7 * 24 * 60 * 60
                 rows.append(ProviderMetricRow(
-                    id: "codex-primary-window",
-                    title: "Session Usage",
-                    subtitle: "5-hour window",
+                    id: isWeekly ? "codex-weekly-window" : "codex-primary-window",
+                    title: isWeekly ? "Weekly Usage" : "Session Usage",
+                    tag: isWeekly ? "Weekly" : nil,
+                    subtitle: isWeekly ? "7-day window" : "5-hour window",
                     usedPercentage: Double(primary.usedPercent),
                     resetTime: Date(timeIntervalSince1970: TimeInterval(primary.resetAt)),
                     periodDuration: TimeInterval(primary.limitWindowSeconds),

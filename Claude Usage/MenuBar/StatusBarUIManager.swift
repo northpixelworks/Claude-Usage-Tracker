@@ -375,13 +375,17 @@ final class StatusBarUIManager {
                 singleColorHex: profileConfig.singleColorHex,
                 showIconName: profileConfig.showIconNames,
                 showNextSessionTime: metricConfig.showNextSessionTime,
-                profilePrefix: prefix
+                profilePrefix: prefix,
+                periodDuration: row(for: metricConfig.metricType, in: snapshot, provider: profile.providerKind)?.periodDuration,
+                periodLabel: profile.providerKind == .copilot ? "Month" : nil
             )
 
             image.isTemplate = profileConfig.colorMode == .monochrome && !profileConfig.showPaceMarker
             setButtonImage(button, image: image)
 
-            let metricName = metricConfig.metricType.displayName
+            let metricName = profile.providerKind == .copilot
+                ? "Monthly Premium Usage"
+                : metricConfig.metricType.displayName
             button.toolTip = "\(profile.name) • \(metricName)"
         }
     }
@@ -954,7 +958,9 @@ final class StatusBarUIManager {
                 singleColorHex: config.singleColorHex,
                 showIconName: config.showIconNames,
                 showNextSessionTime: metricConfig.showNextSessionTime,
-                profilePrefix: profile.providerKind.menuBarPrefix
+                profilePrefix: profile.providerKind.menuBarPrefix,
+                periodDuration: metricRow.periodDuration,
+                periodLabel: profile.providerKind == .copilot ? "Month" : nil
             )
 
             image.isTemplate = config.colorMode == .monochrome && !config.showPaceMarker

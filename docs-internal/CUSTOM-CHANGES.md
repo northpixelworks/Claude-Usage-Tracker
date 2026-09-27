@@ -445,3 +445,10 @@ Multi-profile mode had one global `MultiProfileIconStyle` applied to all profile
 | `Views/Settings/App/ManageProfilesView.swift` | Per-profile icon style pickers |
 | `MenuBar/StatusBarUIManager.swift` | Single-profile peak visuals/tooltips scoped to Claude only |
 | `Views/CommandPaletteView.swift` | Command palette compile fixes for reinstall |
+
+## 2026-09-27 local recovery
+
+- Classify a Codex primary window lasting seven days as weekly, including when no secondary window exists. Regression coverage uses a weekly-only response.
+- `openSettingsOnNextLaunch` opens settings once to recover from off-screen menu bar items on macOS 27.
+
+- GitHub battery markers and pace colors now use the provider’s calendar-month duration in single and multi-profile modes. Battery and tooltip labels identify the monthly premium quota.

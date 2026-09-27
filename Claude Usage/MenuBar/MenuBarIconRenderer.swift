@@ -24,8 +24,11 @@ final class MenuBarIconRenderer {
         singleColorHex: String,
         showIconName: Bool,
         showNextSessionTime: Bool,
-        profilePrefix: String? = nil
+        profilePrefix: String? = nil,
+        periodDuration: TimeInterval? = nil,
+        periodLabel: String? = nil
     ) -> NSImage {
+        // Provider quotas can span a calendar month rather than a Claude week.
         // Get the metric value and percentage
         let metricData = getMetricData(
             metricType: metricType,
@@ -33,7 +36,8 @@ final class MenuBarIconRenderer {
             usage: usage,
             apiUsage: apiUsage,
             showRemaining: globalConfig.showRemainingPercentage,
-            usePaceColoring: globalConfig.usePaceColoring
+            usePaceColoring: globalConfig.usePaceColoring,
+            periodDuration: periodDuration
         )
 
         // Calculate time marker fraction for session/week metrics
@@ -41,7 +45,8 @@ final class MenuBarIconRenderer {
             ? calculateTimeMarkerFraction(
                 metricType: metricType,
                 usage: usage,
-                showRemaining: globalConfig.showRemainingPercentage
+                showRemaining: globalConfig.showRemainingPercentage,
+                periodDuration: periodDuration
             )
             : nil
 
@@ -50,7 +55,8 @@ final class MenuBarIconRenderer {
             guard globalConfig.showPaceMarker, metricType != .api else { return nil }
             // Get raw elapsed fraction (always non-inverted)
             guard let rawElapsed = calculateTimeMarkerFraction(
-                metricType: metricType, usage: usage, showRemaining: false
+                metricType: metricType, usage: usage, showRemaining: false,
+                periodDuration: periodDuration
             ) else { return nil }
             // Get raw used percentage
             let rawUsed: Double = metricType == .session
@@ -90,7 +96,8 @@ final class MenuBarIconRenderer {
                 timeMarkerFraction: timeMarkerFraction,
                 paceStatus: paceStatus,
                 showPaceMarker: showPaceMarker,
-                profilePrefix: profilePrefix
+                profilePrefix: profilePrefix,
+                periodLabel: periodLabel
             )
         case .progressBar:
             return createProgressBarStyle(
@@ -162,7 +169,8 @@ final class MenuBarIconRenderer {
         usage: ClaudeUsage,
         apiUsage: APIUsage?,
         showRemaining: Bool,
-        usePaceColoring: Bool = true
+        usePaceColoring: Bool = true,
+        periodDuration: TimeInterval? = nil
     ) -> MetricData {
         switch metricType {
         case .session:
@@ -174,7 +182,7 @@ final class MenuBarIconRenderer {
             let sessionElapsed: Double? = usePaceColoring
                 ? UsageStatusCalculator.elapsedFraction(
                     resetTime: usage.sessionResetTime,
-                    duration: Constants.sessionWindow,
+                    duration: periodDuration ?? Constants.sessionWindow,
                     showRemaining: false
                 )
                 : nil
@@ -200,7 +208,7 @@ final class MenuBarIconRenderer {
             let weekElapsed: Double? = usePaceColoring
                 ? UsageStatusCalculator.elapsedFraction(
                     resetTime: usage.weeklyResetTime,
-                    duration: Constants.weeklyWindow,
+                    duration: periodDuration ?? Constants.weeklyWindow,
                     showRemaining: false
                 )
                 : nil
@@ -278,7 +286,8 @@ final class MenuBarIconRenderer {
         timeMarkerFraction: CGFloat? = nil,
         paceStatus: PaceStatus? = nil,
         showPaceMarker: Bool = false,
-        profilePrefix: String? = nil
+        profilePrefix: String? = nil,
+        periodLabel: String? = nil
     ) -> NSImage {
         let percentage = CGFloat(metricData.percentage) / 100.0
 
@@ -364,7 +373,7 @@ final class MenuBarIconRenderer {
             }
         } else if showIconName {
             // Show label with optional profile prefix: "CL·Session" or just "Session"
-            let baseName = metricType == .session ? "5h" : "Week"
+            let baseName = periodLabel ?? (metricType == .session ? "5h" : "Week")
             if let pp = profilePrefix {
                 text = "\(pp)·\(baseName)" as NSString
             } else {
@@ -1428,7 +1437,8 @@ final class MenuBarIconRenderer {
     private func calculateTimeMarkerFraction(
         metricType: MenuBarMetricType,
         usage: ClaudeUsage,
-        showRemaining: Bool
+        showRemaining: Bool,
+        periodDuration: TimeInterval? = nil
     ) -> CGFloat? {
         let resetTime: Date?
         let duration: TimeInterval
@@ -1436,10 +1446,10 @@ final class MenuBarIconRenderer {
         switch metricType {
         case .session:
             resetTime = usage.sessionResetTime
-            duration = Constants.sessionWindow
+            duration = periodDuration ?? Constants.sessionWindow
         case .week:
             resetTime = usage.weeklyResetTime
-            duration = Constants.weeklyWindow
+            duration = periodDuration ?? Constants.weeklyWindow
         case .api:
             return nil
         }

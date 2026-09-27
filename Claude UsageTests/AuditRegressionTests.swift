@@ -277,6 +277,12 @@ final class ProviderFailureRegressionTests: XCTestCase {
             } catch { XCTAssertEqual((error as? URLError)?.code, .notConnectedToInternet) }
         }
         UsageStubURLProtocol.responseError = nil
+        UsageStubURLProtocol.responseBody = Data("{\"rate_limit\":{\"primary_window\":{\"used_percent\":13,\"limit_window_seconds\":604800,\"reset_at\":2000000000},\"secondary_window\":null}}".utf8)
+        let weeklyOnly = try await codex.fetchUsage(for: Profile(name: "Codex", providerKind: .codex))
+        XCTAssertEqual(weeklyOnly.primaryRows.count, 1)
+        XCTAssertEqual(weeklyOnly.primaryRows.first?.title, "Weekly Usage")
+        XCTAssertEqual(weeklyOnly.primaryRows.first?.tag, "Weekly")
+        XCTAssertEqual(weeklyOnly.primaryRows.first?.usedPercentage, 13)
     }
 
     func testMissingCodexAuthIsNotASuccessfulEmptySnapshot() async throws {
