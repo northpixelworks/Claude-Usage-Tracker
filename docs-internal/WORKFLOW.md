@@ -9,7 +9,7 @@ We maintain custom modifications on top of the upstream releases.
 
 | Remote     | URL                                                        | Purpose                    |
 |------------|------------------------------------------------------------|----------------------------|
-| `origin`   | `https://github.com/mariowabnig/Claude-Usage-Tracker.git` | Our fork — push changes here |
+| `origin`   | `https://github.com/northpixelworks/Claude-Usage-Tracker.git` | Our fork — push changes here |
 | `upstream` | `https://github.com/HamedElfayome/Claude-Usage-Tracker.git` | Original repo — pull updates from here |
 
 ## Daily Workflow
