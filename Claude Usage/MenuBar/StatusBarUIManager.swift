@@ -1116,9 +1116,9 @@ final class StatusBarUIManager {
     /// Multi-profile image setter. macOS 26 (Tahoe) crash fix: with .variableLength,
     /// AppKit recomputes each item's width inside a shared NSISEngine layout pass, which
     /// recurses and overflows the stack with 2+ items. Pin an explicit length, rounded to
-    /// a coarse grid so ordinary value changes ("5%" vs "45%") never move it.
+    /// a fine 2pt grid (was 32pt, which left wide gaps between items) so ordinary value changes ("5%" vs "45%") never move it.
     private func setMultiProfileImage(_ statusItem: NSStatusItem, button: NSStatusBarButton, image: NSImage) {
-        let stableLength = ceil(image.size.width / 32.0) * 32.0
+        let stableLength = ceil(image.size.width / 2.0) * 2.0
         if abs(statusItem.length - stableLength) > 0.5 {
             statusItem.length = stableLength
         }
