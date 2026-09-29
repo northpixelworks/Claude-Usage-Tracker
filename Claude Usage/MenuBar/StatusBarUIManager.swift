@@ -79,6 +79,7 @@ final class StatusBarUIManager {
 
             if let button = statusItem.button {
                 button.action = action
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 button.target = target
                 // Set a temporary placeholder - will be updated with actual logo
                 button.title = ""
@@ -99,6 +100,7 @@ final class StatusBarUIManager {
 
                 if let button = statusItem.button {
                     button.action = action
+                    button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                     button.target = target
                 } else {
                     LoggingService.shared.logWarning("Status bar button is nil for \(metricConfig.metricType.displayName) - screens: \(NSScreen.screens.count)")
@@ -153,6 +155,7 @@ final class StatusBarUIManager {
 
             if let button = statusItem.button {
                 button.action = action
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 button.target = target
                 if metricType == .session {
                     // Default logo placeholder
@@ -229,6 +232,7 @@ final class StatusBarUIManager {
             statusItem.isVisible = true
             if let button = statusItem.button {
                 button.action = action
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 button.target = target
                 button.title = ""
             } else {
@@ -246,6 +250,7 @@ final class StatusBarUIManager {
 
                 if let button = statusItem.button {
                     button.action = action
+                    button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                     button.target = target
                 } else {
                     LoggingService.shared.logWarning("Multi-profile status bar button is nil for \(item.profileId.uuidString.prefix(8))/\(item.metricType.rawValue) - screens: \(NSScreen.screens.count)")
@@ -295,6 +300,7 @@ final class StatusBarUIManager {
 
             if let button = statusItem.button {
                 button.action = action
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 button.target = target
                 button.title = ""
             }
@@ -310,6 +316,7 @@ final class StatusBarUIManager {
 
                 if let button = statusItem.button {
                     button.action = action
+                    button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                     button.target = target
                 }
 

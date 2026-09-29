@@ -592,6 +592,12 @@ class MenuBarManager: NSObject, ObservableObject {
     }
 
     @objc private func togglePopover(_ sender: Any?) {
+        // Right-click → context menu instead of toggling the popover (upstream c6c962f)
+        if let event = NSApp.currentEvent, event.type == .rightMouseUp {
+            showContextMenu(for: sender as? NSStatusBarButton)
+            return
+        }
+
         // Determine which button was clicked
         let clickedButton: NSStatusBarButton?
         if let button = sender as? NSStatusBarButton {
@@ -687,6 +693,37 @@ class MenuBarManager: NSObject, ObservableObject {
             // initial keyboard focus, so drop first responder to the window itself.
             window.makeFirstResponder(nil)
         }
+    }
+
+    /// Shows a lightweight context menu (Refresh / Settings / Quit) anchored to the
+    /// status bar button that received the right-click.
+    private func showContextMenu(for button: NSStatusBarButton?) {
+        let menu = NSMenu()
+
+        let refreshItem = NSMenuItem(title: "common.refresh".localized, action: #selector(contextMenuRefresh), keyEquivalent: "")
+        refreshItem.target = self
+        menu.addItem(refreshItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let settingsItem = NSMenuItem(title: "common.settings".localized, action: #selector(preferencesClicked), keyEquivalent: ",")
+        settingsItem.keyEquivalentModifierMask = .command
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        let quitItem = NSMenuItem(title: "common.quit".localized, action: #selector(quitClicked), keyEquivalent: "q")
+        quitItem.keyEquivalentModifierMask = .command
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        if let button, let window = button.window {
+            let screenRect = window.convertToScreen(button.convert(button.bounds, to: nil))
+            menu.popUp(positioning: nil, at: NSPoint(x: screenRect.origin.x, y: screenRect.origin.y), in: nil)
+        }
+    }
+
+    @objc private func contextMenuRefresh() {
+        refreshUsage()
     }
 
     private func preferredPopoverSize() -> NSSize {
