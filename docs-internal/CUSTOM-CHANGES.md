@@ -411,6 +411,36 @@ Multi-profile mode had one global `MultiProfileIconStyle` applied to all profile
 
 ---
 
+## 19. Upstream Sync to v3.3.0 (Selective Integration)
+
+**Date:** 2026-09-29 · **Branch:** `sync/upstream-3.3.0` · **Task log:** [done/2026-09-29-upstream-sync-3.3.0.md](done/2026-09-29-upstream-sync-3.3.0.md)
+
+Same strategy as §17: upstream built parallel versions of the fork's provider system and credential vault, so no wholesale merge. Fork architecture stays the base.
+
+### Taken as-is (cherry-pick or upstream file)
+- macOS 26 fixes: 72b7111, f71c5bf; UI: 3a1566e (Cmd+W), b7aa7ba, 20f4e9d (statusline 0700).
+- Claude API service + usage model (b5780ee limits[], 80f5f4a Cloudflare cookies, Design/Fable weekly, tolerant decoding, 9ed6981/008da81) — fork deltas re-applied (`supplementOverageData`, `resolvedBalance`, redacted log).
+- Auto-start (fd8fbca) and notification toggle (be984e0); a4eacd9 sign-in 401 retry.
+- Statusline (weekly/extra usage, per-element colors), Dynamic Island + DynamicNotchKit (opt-in).
+- Languages uk, zh-Hant, vi, tr, pt-BR; all 13 at key parity.
+
+### Adapted to fork architecture
+- Status items (6b3f7d0, 5af720b, 753539f): `isVisible = true`, fixed placeholder length, coarse pinned length via `setMultiProfileImage`.
+- Popover (8eed38f, 2a3cc70, fc5eb1f): `showPopover(_:from:)` + `NSWindow.enableDisplayOnFullScreenSpaces()`.
+- Sign-in (0925cb5, 7b5488c): 1 s `.common` polling + auto-reload.
+- Right-click menu (c6c962f); history-to-files (c5d549f) incl. fork `providerHistory_*`.
+- **Dormancy fix (c75607c/#268, eee15cf)**: `Profile.cliAccountUuid`; `ClaudeCodeSyncService.systemCredentialsBelong`, `hasUsableSystemCredentials`, `freshSystemCredentials` (mirror + one-shot idle refresh with keychain write-back, deduped); fresher-of file/keychain; atomic `add -U`.
+- Codex refresh (52bc240 idea only): `CodexAuthService.freshCredentials(force:)`.
+- Thresholds 70/90 (cfd39fe) keeping fork's early long-period pace coloring.
+
+### Intentionally skipped
+- 3763cd6 heartbeat analytics; sponsor/support popups (a9fee08, 536044c, bbcf447, c8c4f39, a500363).
+- eb07cc9 / 3c9f9fa global showRemaining (fork keeps per-profile); be6d16f / c2f0895 active-profile underline.
+- Upstream provider registry + Codex provider (52bc240) and data-protection keychain migration (ba99f58, e38538e, 551faa6, 7c5c799, c66e0d9) — fork has its own.
+- Multi-account keychain pinning / switch refresh (a2769fd, ce1c081, 5042efc, ecb28dd, ac6013e, 2992d4e, 9d9467a, f14d4a1) and terminal launchers (7061028): depend on upstream's pinning model; revisit if multiple Claude accounts are used.
+
+---
+
 ## Files Modified (summary)
 
 | File | Change |

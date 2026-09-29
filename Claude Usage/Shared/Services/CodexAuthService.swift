@@ -18,6 +18,12 @@ class CodexAuthService {
     /// In-flight token refresh so concurrent fetches never reuse a rotated refresh token.
     fileprivate var inflightRefresh: Task<(accessToken: String, accountId: String?), Error>?
 
+    /// Refresh token already spent by us, with the tokens it produced. If writing them
+    /// back to auth.json failed, the file still holds the spent token; refreshing with
+    /// it again would count as reuse and make OpenAI revoke the whole token family.
+    fileprivate var spentRefreshToken: String?
+    fileprivate var refreshedInMemory: (accessToken: String, accountId: String?)?
+
     init(authFileURL: URL? = nil) { self.authFileOverride = authFileURL }
 
     /// Path to the Codex auth file
@@ -101,13 +107,24 @@ extension CodexAuthService {
             throw AppError(code: .apiUnauthorized, message: "Codex authentication is unavailable or expired.")
         }
         let tokens = root["tokens"] as? [String: Any] ?? [:]
-        let accessToken = Self.string(tokens, "access_token", "accessToken") ?? (root["OPENAI_API_KEY"] as? String)
+        let accessToken = Self.string(tokens, "access_token", "accessToken")
+            ?? Self.string(root, "access_token", "accessToken")
+            ?? (root["OPENAI_API_KEY"] as? String)
         let refreshToken = Self.string(tokens, "refresh_token", "refreshToken")
+            ?? Self.string(root, "refresh_token", "refreshToken")
         let accountId = Self.string(tokens, "account_id", "accountId") ?? (root["account_id"] as? String)
+
+        // Our earlier refresh never reached disk: keep using its result, never re-spend.
+        if let refreshToken, refreshToken == spentRefreshToken, let refreshedInMemory {
+            return refreshedInMemory
+        }
 
         let lastRefresh = Self.parseDate(root["last_refresh"])
         let stale = lastRefresh.map { Date().timeIntervalSince($0) > Self.refreshAge } ?? true
-        guard let refreshToken, force || stale else {
+        // A forced retry soon after a refresh cannot help (the 401 is not about token
+        // age); capping forced refreshes to one per hour avoids rotating on every poll.
+        let justRefreshed = lastRefresh.map { Date().timeIntervalSince($0) < 60 * 60 } ?? false
+        guard let refreshToken, (force && !justRefreshed) || (!force && stale) else {
             guard let accessToken, !accessToken.isEmpty else {
                 throw AppError(code: .apiUnauthorized, message: "Codex authentication is unavailable or expired.")
             }
@@ -122,19 +139,30 @@ extension CodexAuthService {
             updatedTokens["access_token"] = refreshed["access_token"] as? String ?? accessToken
             updatedTokens["refresh_token"] = refreshed["refresh_token"] as? String ?? refreshToken
             if let idToken = refreshed["id_token"] as? String { updatedTokens["id_token"] = idToken }
+            let result = (accessToken: updatedTokens["access_token"] as? String ?? "", accountId: accountId)
+            self.spentRefreshToken = refreshToken
+            self.refreshedInMemory = result
             var updatedRoot = root
             updatedRoot["tokens"] = updatedTokens
             updatedRoot["last_refresh"] = ISO8601DateFormatter().string(from: Date())
             do {
                 try self.writeAuthJSON(updatedRoot)
             } catch {
-                LoggingService.shared.logError("CodexAuthService: refreshed tokens but auth.json write-back failed", error: error)
+                LoggingService.shared.logError("CodexAuthService: refreshed tokens but auth.json write-back failed; using them in memory", error: error)
             }
-            LoggingService.shared.log("✓ CodexAuthService: refreshed Codex tokens and wrote back to auth.json")
-            return (updatedTokens["access_token"] as? String ?? "", accountId)
+            LoggingService.shared.log("✓ CodexAuthService: refreshed Codex tokens")
+            return result
         }
         inflightRefresh = task
-        return try await task.value
+        do {
+            return try await task.value
+        } catch where !force {
+            // Proactive (8-day) refresh failed, e.g. offline right after wake: the
+            // current access token usually still works, so keep using it.
+            guard let accessToken, !accessToken.isEmpty else { throw error }
+            LoggingService.shared.logError("CodexAuthService: proactive refresh failed; using current token", error: error)
+            return (accessToken, accountId)
+        }
     }
 
     private func readAuthJSON() -> [String: Any]? {

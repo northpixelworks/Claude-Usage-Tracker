@@ -37,6 +37,20 @@ class ClaudeCodeSyncService {
     /// 2. System Keychain (may be truncated for large payloads >2KB)
     /// 3. Regex extraction of accessToken from truncated keychain data (last resort)
     func readSystemCredentials() throws -> String? {
+        if let cache = systemCredentialsCache,
+           Date().timeIntervalSince(cache.readAt) < Self.systemCredentialsCacheTTL {
+            return cache.json
+        }
+        let json = try readSystemCredentialsUncached()
+        systemCredentialsCache = (json, Date())
+        return json
+    }
+
+    func invalidateSystemCredentialsCache() {
+        systemCredentialsCache = nil
+    }
+
+    private func readSystemCredentialsUncached() throws -> String? {
         // On macOS Claude Code rotates the KEYCHAIN only; the file is usually a stale
         // mirror. Read both and prefer the fresher (later expiresAt; tie → keychain).
         let fileJSON = readCredentialsFile()
@@ -353,6 +367,8 @@ class ClaudeCodeSyncService {
     /// Every subprocess invocation is bounded by `securityCommandTimeout` so a
     /// hung `security` process cannot block the caller indefinitely.
     func writeSystemCredentials(_ jsonData: String) throws {
+        invalidateSystemCredentialsCache()
+        defer { invalidateSystemCredentialsCache() }
         let serviceName = resolveServiceName()
         LoggingService.shared.log("Writing credentials to keychain using security command (service: \(serviceName))")
 
@@ -420,6 +436,9 @@ class ClaudeCodeSyncService {
 
         LoggingService.shared.log("📦 Found CLI credentials, writing to keychain...")
         try writeSystemCredentials(jsonData)
+        // ~/.claude.json oauthAccount now describes the PREVIOUS login until Claude
+        // Code refetches its profile; distrust it until then (see systemAccountIdentity).
+        UserDefaults.standard.set(Date(), forKey: Self.lastCredentialApplyKey)
 
         LoggingService.shared.log("✅ Applied profile CLI credentials to system: \(profileId)")
     }
@@ -432,6 +451,7 @@ class ClaudeCodeSyncService {
         }
 
         profiles[index].cliCredentialsJSON = nil
+        profiles[index].cliAccountUuid = nil
         ProfileStore.shared.saveProfiles(profiles)
 
         LoggingService.shared.log("Removed CLI credentials from profile: \(profileId)")
@@ -510,20 +530,34 @@ class ClaudeCodeSyncService {
     private static let oauthRefreshURL = URL(string: "https://platform.claude.com/v1/oauth/token")!
     private static let defaultOAuthClientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 
+    private static let lastCredentialApplyKey = "ClaudeCodeSyncService.lastCredentialApplyAt"
+
+    /// Short cache for readSystemCredentials: UI gates call it repeatedly and each
+    /// read spawns `/usr/bin/security` (up to 3 s) on the main thread.
+    private var systemCredentialsCache: (json: String?, readAt: Date)?
+    private static let systemCredentialsCacheTTL: TimeInterval = 10
+
     /// In-flight idle refresh, so concurrent fetches never spend the refresh token twice.
     @MainActor private var idleRefreshTask: Task<String?, Never>?
 
     /// Account id of the login Claude Code currently holds (`oauthAccount.accountUuid`,
-    /// email as fallback), or nil if ~/.claude.json is missing/unreadable.
+    /// email as fallback). nil when unreadable OR stale: after this app wrote another
+    /// profile's tokens into the keychain, oauthAccount keeps describing the previous
+    /// login until Claude Code refetches it (`profileFetchedAt`, ms since epoch).
     func systemAccountIdentity() -> String? {
         let candidates = [
             Constants.ClaudePaths.homeDirectory.appendingPathComponent(".claude.json"),
             Constants.ClaudePaths.claudeDirectory.appendingPathComponent(".claude.json")
         ]
+        let lastApply = UserDefaults.standard.object(forKey: Self.lastCredentialApplyKey) as? Date
         for url in candidates {
             guard let data = try? Data(contentsOf: url),
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let account = json["oauthAccount"] as? [String: Any] else { continue }
+            if let lastApply {
+                guard let fetchedMs = (account["profileFetchedAt"] as? NSNumber)?.doubleValue,
+                      Date(timeIntervalSince1970: fetchedMs / 1000) > lastApply else { return nil }
+            }
             if let uuid = account["accountUuid"] as? String, !uuid.isEmpty { return uuid }
             if let email = account["emailAddress"] as? String, !email.isEmpty { return "email:\(email.lowercased())" }
         }
@@ -531,11 +565,19 @@ class ClaudeCodeSyncService {
     }
 
     /// True when the system login provably belongs to `profile`: a shared token
-    /// (unrotated) or the same recorded Claude account id (rotated).
+    /// (unrotated) or — for the ACTIVE profile only, whose lineage the system login
+    /// is — the same recorded Claude account id (rotated).
     func systemCredentialsBelong(to profile: Profile, systemJSON: String) -> Bool {
         if Self.credentialsMatch(profile.cliCredentialsJSON, systemJSON) { return true }
-        guard let recorded = profile.cliAccountUuid else { return false }
+        guard let recorded = profile.cliAccountUuid,
+              profile.id == ProfileStore.shared.loadActiveProfileId() else { return false }
         return recorded == systemAccountIdentity()
+    }
+
+    /// Only complete logins (refresh token + expiry) are worth persisting; a regex-
+    /// salvaged access token from a truncated keychain entry must never replace one.
+    private func isCompleteLogin(_ json: String) -> Bool {
+        extractRefreshToken(from: json) != nil && extractTokenExpiry(from: json) != nil
     }
 
     func extractRefreshToken(from jsonData: String) -> String? {
@@ -568,7 +610,9 @@ class ClaudeCodeSyncService {
               systemCredentialsBelong(to: profile, systemJSON: systemJSON) else { return nil }
 
         if !isTokenExpired(systemJSON) {
-            mirrorSystemCredentials(systemJSON, into: profile.id)
+            if isCompleteLogin(systemJSON) {
+                mirrorSystemCredentials(systemJSON, into: profile.id)
+            }
             return systemJSON
         }
 
@@ -585,8 +629,11 @@ class ClaudeCodeSyncService {
     @MainActor
     private func refreshIdleSystemCredentials(_ systemJSON: String, profileId: UUID) async -> String? {
         // Re-read: the CLI may have refreshed while we waited.
+        invalidateSystemCredentialsCache()
         if let latest = try? readSystemCredentials(), !isTokenExpired(latest) {
-            mirrorSystemCredentials(latest, into: profileId)
+            if isCompleteLogin(latest) {
+                mirrorSystemCredentials(latest, into: profileId)
+            }
             return latest
         }
         guard let refreshToken = extractRefreshToken(from: systemJSON) else { return nil }

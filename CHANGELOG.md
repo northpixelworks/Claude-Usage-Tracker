@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upstream sync → v3.3.0 (selective, 2026-09-29)
+
+- **Tracker no longer goes dormant after sleep**: Profiles remember their Claude account id, so Claude Code's token rotation no longer breaks continuity; an expired token from an idle CLI is refreshed once and written back to the keychain (upstream #268, adapted).
+- **Codex token refresh**: Stale Codex tokens (8-day rule / 401) are refreshed and written back to `~/.codex/auth.json`.
+- **Usage history in files**: History moved out of UserDefaults (4 MB limit silently dropped all writes, including credentials).
+- **Claude API**: New `limits[]` weekly format, Claude Design + Fable weekly rows, Cloudflare clearance cookies, 429 usage headers, tolerant decoding.
+- **macOS 26 stability**: Multi-profile status item crash fixes, NSImage TIFF crash, popover layout recursion, popovers over full-screen apps / active Space, no focus ring.
+- **New**: Dynamic Island (beta, opt-in), right-click menu (Refresh / Settings / Quit), Cmd+W closes Settings, upstream statusline options, Ukrainian / Traditional Chinese / Vietnamese / Turkish / pt-BR.
+- **Colors**: Usage color thresholds 70 % / 90 % (fork's early Copilot pace coloring kept).
+- Skipped on purpose: analytics heartbeat, sponsor / coffee popups, upstream multi-account keychain pinning + terminal launchers, upstream provider architecture (fork keeps its own). Details: `docs-internal/CUSTOM-CHANGES.md` §19.
+
 ### Fixed
 
 - **Account isolation**: Automatic CLI sync and fallback now require matching token continuity; unrelated logins cannot overwrite other profiles.

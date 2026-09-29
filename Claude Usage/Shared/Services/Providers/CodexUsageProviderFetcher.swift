@@ -37,9 +37,14 @@ class CodexUsageProviderFetcher: UsageProviderFetcher {
             let credentials = try await authService.freshCredentials()
             do {
                 response = try await fetchUsageResponse(accessToken: credentials.accessToken, accountId: credentials.accountId)
-            } catch let error as AppError where error.code == .apiUnauthorized {
+            } catch is CodexTokenRejected {
+                // Only a 401 means the token itself was rejected; retry once, refreshed.
                 let refreshed = try await authService.freshCredentials(force: true)
-                response = try await fetchUsageResponse(accessToken: refreshed.accessToken, accountId: refreshed.accountId)
+                do {
+                    response = try await fetchUsageResponse(accessToken: refreshed.accessToken, accountId: refreshed.accountId)
+                } catch is CodexTokenRejected {
+                    throw AppError(code: .apiUnauthorized, message: "Codex authentication was rejected. Reconnect your account.")
+                }
             }
 
             var rows: [ProviderMetricRow] = []
@@ -137,7 +142,10 @@ class CodexUsageProviderFetcher: UsageProviderFetcher {
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+            if httpResponse.statusCode == 401 {
+                throw CodexTokenRejected()
+            }
+            if httpResponse.statusCode == 403 {
                 throw AppError(code: .apiUnauthorized, message: "Codex authentication was rejected. Reconnect your account.")
             }
             throw URLError(.badServerResponse)
@@ -146,6 +154,9 @@ class CodexUsageProviderFetcher: UsageProviderFetcher {
         return try JSONDecoder().decode(CodexUsageAPIResponse.self, from: data)
     }
 }
+
+/// 401 from the usage endpoint: the access token was rejected (refreshable).
+private struct CodexTokenRejected: Error {}
 
 private struct CodexUsageAPIResponse: Decodable {
     let planType: String?

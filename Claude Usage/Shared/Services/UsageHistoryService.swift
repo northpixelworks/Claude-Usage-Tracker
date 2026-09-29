@@ -66,7 +66,8 @@ class UsageHistoryService {
 
     private func readBlob(forKey key: String) -> Data? {
         guard let url = blobURL(forKey: key) else { return defaults.data(forKey: key) }
-        return try? Data(contentsOf: url)
+        // Fall back to a not-yet-migrated UserDefaults blob so history never vanishes.
+        return (try? Data(contentsOf: url)) ?? defaults.data(forKey: key)
     }
 
     private func writeBlob(_ data: Data, forKey key: String) throws {
@@ -94,6 +95,11 @@ class UsageHistoryService {
         for (key, value) in defaults.dictionaryRepresentation()
         where key.hasPrefix(historyKeyPrefix) || key.hasPrefix("providerHistory_") {
             guard let data = value as? Data, let url = blobURL(forKey: key) else { continue }
+            if FileManager.default.fileExists(atPath: url.path) {
+                // File already written by this version: it is newer, drop the stale blob.
+                defaults.removeObject(forKey: key)
+                continue
+            }
             do {
                 try data.write(to: url, options: [.atomic])
                 defaults.removeObject(forKey: key)

@@ -21,7 +21,17 @@ No wholesale merge: upstream built parallel versions of the fork's provider syst
 - ba99f58, e38538e, 551faa6, 7c5c799, c66e0d9 upstream data-protection keychain migration — fork has its own vault (`profiles_v4`).
 
 ### Take / adapt
-See progress log below.
+Full list with commit ids: `CUSTOM-CHANGES.md` §19.
+
+## Root cause of "doesn't sync automatically"
+1. Continuity check required a shared token; Claude Code rotates both tokens → mismatch → gates said "no credentials" → no refresh.
+2. No token refresh at all; an idle CLI (sleep) leaves an expired token → dormant.
+3. (latent) history blobs in UserDefaults → 4 MB limit silently drops credential writes.
 
 ## Progress log
 - [x] Baseline build of fork main succeeds.
+- [x] UI/crash fixes, languages, API service, sign-in, dormancy fix, Codex refresh, history files, right-click menu, Dynamic Island, statusline, thresholds, i18n parity.
+- [x] Build green; tests: 211 passed, 1 stale threshold test updated.
+- [ ] Independent review of credential changes → apply findings.
+- [ ] Re-run tests, back up current app + prefs, install, verify live refresh.
+- [ ] Merge to main + push (ask user).

@@ -569,7 +569,6 @@ class ProfileManager: ObservableObject {
                 // potentially changed CLI account between validation and save).
                 guard let index = profiles.firstIndex(where: { $0.id == profile.id }) else { continue }
                 profiles[index].cliCredentialsJSON = systemCreds
-                profiles[index].cliAccountUuid = profiles[index].cliAccountUuid ?? cliSyncService.systemAccountIdentity()
                 profiles[index].cliAccountSyncedAt = Date()
                 profileStore.saveProfiles(profiles)
 
