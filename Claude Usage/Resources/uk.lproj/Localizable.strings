@@ -537,8 +537,6 @@
 "multiprofile.show_label_description" = "Відображати назву профілю під іконкою";
 "multiprofile.use_system_color" = "Монохромний";
 "multiprofile.use_system_color_description" = "Використовувати білий колір замість кольорів статусу (зелений/помаранчевий/червоний)";
-"multiprofile.active_indicator_title" = "Показувати індикатор активного профілю";
-"multiprofile.active_indicator_description" = "Показує невелике зелене підкреслення під іконкою поточного активного профілю";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */
@@ -1017,74 +1015,43 @@
 "notch.server.retry" = "Повторити";
 
 /* Sponsor slot */
-"sponsor.slot_title" = "Це місце доступне для спонсорів";
-"sponsor.slot_cta" = "Звʼязатися";
 
 /* Multi-Provider / OpenAI Codex */
-"section.codex_account_title" = "Обліковий запис Codex";
-"section.codex_account_desc" = "Підключіть свій обліковий запис OpenAI Codex";
-"profiles.provider_label" = "Провайдер";
-"profiles.provider_hint" = "Який сервіс відстежує цей профіль. Змінити пізніше не можна.";
-"usage.window.session" = "Сесія";
-"usage.window.weekly" = "Тижневий";
-"popover.credits_unlimited" = "Необмежені кредити";
-"popover.credits_balance" = "Кредити: %@";
-"codex.title" = "Обліковий запис OpenAI Codex";
-"codex.subtitle" = "Відстежуйте свої ліміти використання Codex";
-"codex.connected" = "Підключено";
-"codex.not_connected" = "Не підключено";
-"codex.source_manual" = "Використовуються збережені вручну облікові дані";
-"codex.source_authfile" = "Зчитування з Codex CLI (auth.json)";
-"codex.signed_in_as" = "Ви ввійшли як %@";
-"codex.test_connection" = "Перевірити з'єднання";
-"codex.cli_detection_title" = "Codex CLI";
-"codex.cli_detection_subtitle" = "Облікові дані зчитуються з ~/.codex/auth.json";
-"codex.cli_detected" = "Codex CLI виявлено";
-"codex.last_refresh" = "Токени оновлено %@";
-"codex.live_read_note" = "Облікові дані зчитуються з auth.json наживо — увійдіть або вийдіть через Codex CLI, і цей профіль оновиться автоматично.";
-"codex.cli_not_detected" = "Codex CLI не виявлено";
-"codex.cli_not_detected_hint" = "Встановіть Codex CLI і виконайте `codex`, щоб увійти, або вставте облікові дані нижче.";
-"codex.rescan" = "Сканувати знову";
-"codex.test_success" = "З'єднання ОК";
-"codex.test_success_plan" = "Підключено — план %@";
-"codex.manual_title" = "Облікові дані вручну";
-"codex.manual_subtitle" = "Вставте вміст auth.json, якщо CLI немає на цьому Mac";
-"codex.manual_saved" = "Облікові дані збережено";
-"codex.manual_remove" = "Видалити";
-"codex.manual_save" = "Зберегти облікові дані";
-"setup.choose_provider.subtitle" = "Який сервіс ви хочете відстежувати?";
-"setup.choose_provider.anthropic_hint" = "Використання Claude.ai, Claude Code і Console";
-"setup.choose_provider.codex_hint" = "Ліміти використання OpenAI Codex CLI";
-"setup.choose_provider.skip" = "Поки що пропустити";
-"setup.codex_detected.title" = "Codex CLI виявлено";
-"setup.codex_detected.description" = "Ваші облікові дані Codex CLI знайдено. Почніть відстежувати свої ліміти використання просто зараз.";
-"setup.codex_not_detected.title" = "Підключити Codex";
-"setup.codex_not_detected.description" = "Вхід Codex CLI не знайдено. Виконайте `codex`, щоб увійти, або вставте вміст ~/.codex/auth.json нижче.";
-"notification.usage_updated.title" = "Використання оновлено";
-"notification.usage_updated.body" = "Дані про використання успішно завантажено";
-"error.codex_credentials_invalid" = "Не вдалося прочитати облікові дані Codex";
-"error.codex_credentials_invalid.suggestion" = "Вставте повний вміст ~/.codex/auth.json";
-"error.codex_credentials_not_found" = "Облікові дані Codex не знайдено";
-"error.codex_credentials_not_found.suggestion" = "Виконайте `codex`, щоб увійти, або вставте облікові дані в Налаштуваннях";
-"error.codex_auth_expired" = "Термін дії входу Codex минув";
-"error.codex_auth_expired.suggestion" = "Виконайте `codex` у терміналі, щоб увійти знову";
-"error.codex_auth_refresh_failed" = "Не вдалося оновити вхід Codex";
-"error.codex_invalid_response" = "Неочікувана відповідь API використання Codex";
-"error.codex_server_error" = "API використання Codex повернув помилку";
 
 // MARK: - Terminal Launcher
-"launcher.title" = "Термінальний запускач";
-"launcher.subtitle" = "Запускайте Claude Code із цим профілем із будь-якого термінала";
-"launcher.description" = "Встановлює команду %@. Звичайна команда claude і надалі використовує активний профіль; запускач завжди відкриває власний вхід Claude Code цього профілю.";
-"launcher.install" = "Встановити запускач";
-"launcher.remove" = "Видалити";
-"launcher.login_needed" = "Одноразове налаштування: виконайте %@ у терміналі та увійдіть через /login. Далі застосунок автоматично звʼяже та відстежуватиме цей акаунт.";
-"launcher.pinned" = "Звʼязано — відстеження використання йде за цим входом.";
-"launcher.verify" = "Перевірити вхід";
-"launcher.path_warning" = "~/.local/bin відсутній у вашому PATH. Додайте цей рядок до профілю оболонки:";
-"launcher.install_failed" = "Не вдалося встановити запускач: %@";
-"support.popup_title" = "Привіт, я Hamed 👋";
-"support.popup_later" = "Можливо, пізніше";
-"support.popup_signature" = "команда з однієї людини за Claude Usage";
-"support.popup_body" = "Безплатний, з відкритим кодом, зроблений однією людиною — без реклами й стеження. Якщо він урятував вас від спаленого ліміту сесії, кава тримає його живим.";
-"support.popup_days" = "Пильнує ваші ліміти вже %d днів — завжди безплатно";
+
+/* Fork features (command palette, pace guidance, battery style) */
+"menubar.elapsed_percentage" = "Минуло %d%%";
+"multiprofile.style_battery" = "Батарея";
+"appearance.not_active_profile" = "Не активний профіль";
+"appearance.not_selected_for_display" = "Не вибрано для показу";
+"peak.pace.much_faster" = "▸ Можна працювати набагато швидше";
+"peak.pace.faster" = "▸ Можна працювати в %.1fx швидше";
+"peak.pace.perfect" = "▸ Ідеальний темп для 100%%";
+"peak.pace.slow_down" = "▸ Сповільніться до %d%% поточного темпу";
+"peak.trend.same" = "≈ як минулого тижня";
+"peak.trend.more" = "↑ на %d%% більше, ніж минулого тижня";
+"peak.trend.less" = "↓ на %d%% менше, ніж минулого тижня";
+"command_palette.placeholder" = "Пошук команд…";
+"command_palette.no_results" = "Немає відповідних команд";
+"command_palette.back" = "Назад";
+"command_palette.hint_enter" = "вибрати";
+"command_palette.category.actions" = "Дії";
+"command_palette.category.profiles" = "Профілі";
+"command_palette.category.settings" = "Налаштування";
+"command_palette.category.window" = "Вікно";
+"command_palette.category.updates" = "Оновлення";
+"command_palette.refresh_now" = "Оновити зараз";
+"command_palette.force_refresh_all" = "Примусово оновити всі профілі";
+"command_palette.copy_usage" = "Скопіювати використання в буфер обміну";
+"command_palette.switch_profile" = "Змінити активний профіль";
+"command_palette.create_profile" = "Створити профіль";
+"command_palette.edit_profile" = "Редагувати профіль";
+"command_palette.icon_style" = "Змінити стиль іконки";
+"command_palette.color_mode" = "Змінити колірний режим";
+"command_palette.switch_language" = "Змінити мову";
+"command_palette.open_settings" = "Відкрити налаштування";
+"command_palette.close_settings" = "Закрити налаштування";
+"command_palette.detach_popover" = "Відокремити спливаюче вікно";
+"command_palette.open_feedback" = "Відкрити вікно відгуку";
+"command_palette.check_updates" = "Перевірити оновлення";
