@@ -32,6 +32,8 @@ Full list with commit ids: `CUSTOM-CHANGES.md` §19.
 - [x] Baseline build of fork main succeeds.
 - [x] UI/crash fixes, languages, API service, sign-in, dormancy fix, Codex refresh, history files, right-click menu, Dynamic Island, statusline, thresholds, i18n parity.
 - [x] Build green; tests: 211 passed, 1 stale threshold test updated.
-- [ ] Independent review of credential changes → apply findings.
-- [ ] Re-run tests, back up current app + prefs, install, verify live refresh.
-- [ ] Merge to main + push (ask user).
+- [x] Independent review of credential changes → 9 findings fixed (identity trust after apply, Codex token reuse, forced-refresh loop, incomplete-login mirroring, history fallback, …).
+- [x] Tests: 212 passed. Backup: `~/Documents/Codex/2026-09-29-tracker-backup/` (old app, prefs, codex auth.json).
+- [x] Installed; after the one-time Keychain prompt ("Always Allow"), live refresh verified: Claude ~30 s, Codex/Copilot recording, history migrated to files, account id recorded.
+- [x] MARKETING_VERSION → 3.3.0 (takes effect on next build/install).
+- Note: every rebuild of the unsigned fork changes its signature → one Keychain prompt per install.
