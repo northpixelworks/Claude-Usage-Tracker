@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 /// Service for managing usage history data
 @MainActor
 class UsageHistoryService {
-    static let shared = UsageHistoryService()
+    static let shared = UsageHistoryService(historyDirectory: UsageHistoryService.defaultHistoryDirectory)
 
     private let defaults: UserDefaults
     private let encoder = JSONEncoder()
@@ -31,8 +31,82 @@ class UsageHistoryService {
     private let sessionRecordingInterval: TimeInterval = 10 * 60  // 10 minutes
     private let weeklyRecordingInterval: TimeInterval = 2 * 60 * 60  // 2 hours
 
-    init(defaults: UserDefaults = .standard) {
+    /// Directory for history blobs. nil keeps blobs in `defaults` (test isolation).
+    private let historyDirectory: URL?
+
+    /// UserDefaults key marking that the one-time UserDefaults→file migration ran.
+    private let historyMigrationDoneKey = "usageHistoryMigratedToFiles_v1"
+
+    init(defaults: UserDefaults = .standard, historyDirectory: URL? = nil) {
         self.defaults = defaults
+        self.historyDirectory = historyDirectory
+        migrateHistoryToFilesIfNeeded()
+    }
+
+    // MARK: - File-Based History Storage (upstream c5d549f / #260)
+    // History blobs grow to several MB per profile. In UserDefaults they push the
+    // app's domain past the 4 MB CFPreferences limit, after which macOS silently
+    // drops ALL writes to it — including profile credentials. Keep them in files.
+
+    static var defaultHistoryDirectory: URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? Constants.ClaudePaths.homeDirectory.appendingPathComponent("Library/Application Support")
+        return base
+            .appendingPathComponent("Claude Usage", isDirectory: true)
+            .appendingPathComponent("history", isDirectory: true)
+    }
+
+    private func blobURL(forKey key: String) -> URL? {
+        guard let historyDirectory else { return nil }
+        if !FileManager.default.fileExists(atPath: historyDirectory.path) {
+            try? FileManager.default.createDirectory(at: historyDirectory, withIntermediateDirectories: true)
+        }
+        return historyDirectory.appendingPathComponent("\(key).json")
+    }
+
+    private func readBlob(forKey key: String) -> Data? {
+        guard let url = blobURL(forKey: key) else { return defaults.data(forKey: key) }
+        return try? Data(contentsOf: url)
+    }
+
+    private func writeBlob(_ data: Data, forKey key: String) throws {
+        guard let url = blobURL(forKey: key) else {
+            defaults.set(data, forKey: key)
+            return
+        }
+        try data.write(to: url, options: [.atomic])
+    }
+
+    private func removeBlob(forKey key: String) {
+        if let url = blobURL(forKey: key) {
+            try? FileManager.default.removeItem(at: url)
+        }
+        // Best-effort removal of any legacy UserDefaults blob.
+        defaults.removeObject(forKey: key)
+    }
+
+    /// One-time migration of `usageHistory_*` / `providerHistory_*` blobs out of
+    /// UserDefaults into files. A key is removed only after its file was written.
+    private func migrateHistoryToFilesIfNeeded() {
+        guard historyDirectory != nil, !defaults.bool(forKey: historyMigrationDoneKey) else { return }
+        var migrated = 0
+        var failed = 0
+        for (key, value) in defaults.dictionaryRepresentation()
+        where key.hasPrefix(historyKeyPrefix) || key.hasPrefix("providerHistory_") {
+            guard let data = value as? Data, let url = blobURL(forKey: key) else { continue }
+            do {
+                try data.write(to: url, options: [.atomic])
+                defaults.removeObject(forKey: key)
+                migrated += 1
+            } catch {
+                failed += 1
+                LoggingService.shared.logStorageError("migrateHistoryToFiles(\(key))", error: error)
+            }
+        }
+        if failed == 0 {
+            defaults.set(true, forKey: historyMigrationDoneKey)
+        }
+        LoggingService.shared.logInfo("UsageHistory: migrated \(migrated) history blob(s) from UserDefaults to files")
     }
 
     // MARK: - Persistent Timestamp Tracking
@@ -70,7 +144,7 @@ class UsageHistoryService {
     func saveHistory(_ history: UsageHistoryData, for profileId: UUID) {
         do {
             let data = try encoder.encode(history)
-            defaults.set(data, forKey: storageKey(for: profileId))
+            try writeBlob(data, forKey: storageKey(for: profileId))
             LoggingService.shared.logStorageSave("usageHistory for profile \(profileId.uuidString.prefix(8))")
         } catch {
             LoggingService.shared.logStorageError("saveHistory", error: error)
@@ -79,7 +153,7 @@ class UsageHistoryService {
 
     /// Loads usage history for a profile
     func loadHistory(for profileId: UUID) -> UsageHistoryData {
-        guard let data = defaults.data(forKey: storageKey(for: profileId)) else {
+        guard let data = readBlob(forKey: storageKey(for: profileId)) else {
             return UsageHistoryData()
         }
 
@@ -381,7 +455,7 @@ class UsageHistoryService {
         let storageKey = "providerHistory_\(profileId.uuidString)"
 
         var historyData: ProviderHistoryData
-        if let data = defaults.data(forKey: storageKey),
+        if let data = readBlob(forKey: storageKey),
            let existing = try? decoder.decode(ProviderHistoryData.self, from: data) {
             historyData = existing
         } else {
@@ -396,7 +470,11 @@ class UsageHistoryService {
         }
 
         if let encoded = try? encoder.encode(historyData) {
-            defaults.set(encoded, forKey: storageKey)
+            do {
+                try writeBlob(encoded, forKey: storageKey)
+            } catch {
+                LoggingService.shared.logStorageError("recordProviderHistoryPoints", error: error)
+            }
         }
 
         LoggingService.shared.logInfo("Recorded \(points.count) provider history points for profile \(profileId.uuidString.prefix(8))")
@@ -405,7 +483,7 @@ class UsageHistoryService {
     /// Loads provider-neutral history data for a profile
     func loadProviderHistory(for profileId: UUID) -> ProviderHistoryData {
         let storageKey = "providerHistory_\(profileId.uuidString)"
-        guard let data = defaults.data(forKey: storageKey) else {
+        guard let data = readBlob(forKey: storageKey) else {
             return ProviderHistoryData(points: [])
         }
 
@@ -420,7 +498,7 @@ class UsageHistoryService {
     /// Clears provider-neutral history for a profile
     func clearProviderHistory(for profileId: UUID) {
         let storageKey = "providerHistory_\(profileId.uuidString)"
-        defaults.removeObject(forKey: storageKey)
+        removeBlob(forKey: storageKey)
         LoggingService.shared.logInfo("Cleared provider history for profile \(profileId.uuidString.prefix(8))")
     }
 
@@ -428,12 +506,12 @@ class UsageHistoryService {
 
     /// Deletes all history for a profile
     func deleteHistory(for profileId: UUID) {
-        defaults.removeObject(forKey: storageKey(for: profileId))
+        removeBlob(forKey: storageKey(for: profileId))
         // Also delete persisted timestamps
         defaults.removeObject(forKey: "\(lastSessionRecordTimePrefix)\(profileId.uuidString)")
         defaults.removeObject(forKey: "\(lastWeeklyRecordTimePrefix)\(profileId.uuidString)")
         // Also delete provider-neutral history
-        defaults.removeObject(forKey: "providerHistory_\(profileId.uuidString)")
+        removeBlob(forKey: "providerHistory_\(profileId.uuidString)")
         LoggingService.shared.logInfo("Deleted usage history for profile \(profileId.uuidString.prefix(8))")
     }
 
