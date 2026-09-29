@@ -25,4 +25,7 @@ extension Notification.Name {
 
     /// Posted when auto-switch profile is triggered (for UI reactivity)
     static let autoSwitchProfileTriggered = Notification.Name("autoSwitchProfileTriggered")
+
+    /// Posted when the Claude Code notch HUD setting (enabled / auto-hide) changes
+    static let notchHUDSettingChanged = Notification.Name("notchHUDSettingChanged")
 }

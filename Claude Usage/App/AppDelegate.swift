@@ -43,6 +43,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         menuBarManager = MenuBarManager()
 
         // Check if setup has been completed
+        // Claude Code notch HUD / Dynamic Island (opt-in): start the hook listener + HUD
+        // when enabled, and react to the settings toggle at runtime (upstream 6090d65).
+        updateNotchHUDServices()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNotchHUDSettingChanged),
+            name: .notchHUDSettingChanged,
+            object: nil
+        )
+
         if !shouldShowSetupWizard() {
             // Initialize menu bar with active profile
             menuBarManager?.setup()
@@ -226,7 +236,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     func applicationWillTerminate(_ notification: Notification) {
         // Cleanup
+        NotchHookServer.shared.stop()
+        NotchHUDController.shared.stop()
         menuBarManager?.cleanup()
+    }
+
+    // MARK: - Claude Code Notch HUD
+
+    @objc private func handleNotchHUDSettingChanged() {
+        updateNotchHUDServices()
+    }
+
+    private func updateNotchHUDServices() {
+        if SharedDataStore.shared.loadNotchHUDEnabled() {
+            NotchHUDController.shared.start()
+            NotchHookServer.shared.start()
+            // Self-heal hook config drift (e.g. legacy entries from an old build).
+            if NotchHookInstaller.shared.checkStatus() != .installed {
+                NotchHookInstaller.shared.install()
+            }
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--mock-notch") {
+                NotchHUDController.shared.injectMockSessions()
+            }
+            #endif
+        } else {
+            NotchHookServer.shared.stop()
+            NotchHUDController.shared.stop()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
