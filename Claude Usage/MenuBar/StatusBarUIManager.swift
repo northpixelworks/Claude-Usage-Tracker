@@ -948,7 +948,7 @@ final class StatusBarUIManager {
     ) {
         let config = profile.iconConfig
 
-        guard profile.hasUsageCredentials, !config.enabledMetrics.isEmpty else {
+        guard hasRenderableUsageCredentials(for: profile), !config.enabledMetrics.isEmpty else {
             if let statusItem = statusItems[.session],
                let button = statusItem.button {
                 let menuBarIsDark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
