@@ -929,17 +929,7 @@ final class StatusBarUIManager {
             return false
         }
 
-        do {
-            if let systemCreds = try ClaudeCodeSyncService.shared.readSystemCredentials(),
-               !ClaudeCodeSyncService.shared.isTokenExpired(systemCreds),
-               ClaudeCodeSyncService.shared.extractAccessToken(from: systemCreds) != nil {
-                return true
-            }
-        } catch {
-            LoggingService.shared.log("StatusBarUIManager.hasRenderableUsageCredentials: system credential check failed: \(error.localizedDescription)")
-        }
-
-        return false
+        return ClaudeCodeSyncService.shared.hasUsableSystemCredentials(for: profile)
     }
 
     /// Updates single-profile status items using a provider-neutral snapshot.

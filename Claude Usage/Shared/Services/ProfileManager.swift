@@ -295,6 +295,20 @@ class ProfileManager: ObservableObject {
         }
     }
 
+    /// Stores CLI credentials mirrored from a verified system login so the continuity
+    /// chain survives Claude Code's token rotation (fork: idle-refresh / #268 adaptation).
+    func mirrorCLICredentials(_ json: String, accountUuid: String?, for profileId: UUID) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileId }),
+              profiles[index].cliCredentialsJSON != json || profiles[index].cliAccountUuid != accountUuid else { return }
+        profiles[index].cliCredentialsJSON = json
+        profiles[index].cliAccountUuid = accountUuid
+        profiles[index].cliAccountSyncedAt = Date()
+        profileStore.saveProfiles(profiles)
+        if activeProfile?.id == profileId {
+            activeProfile = profiles[index]
+        }
+    }
+
     /// Removes Claude.ai credentials for a profile
     func removeClaudeAICredentials(for profileId: UUID) throws {
         // Load and clear credentials from Keychain
@@ -547,7 +561,7 @@ class ProfileManager: ObservableObject {
                 guard let systemCreds = try cliSyncService.readSystemCredentials(),
                       !cliSyncService.isTokenExpired(systemCreds),
                       cliSyncService.extractAccessToken(from: systemCreds) != nil,
-                      ClaudeCodeSyncService.credentialsMatch(profile.cliCredentialsJSON, systemCreds) else {
+                      cliSyncService.systemCredentialsBelong(to: profile, systemJSON: systemCreds) else {
                     continue
                 }
 
@@ -555,6 +569,7 @@ class ProfileManager: ObservableObject {
                 // potentially changed CLI account between validation and save).
                 guard let index = profiles.firstIndex(where: { $0.id == profile.id }) else { continue }
                 profiles[index].cliCredentialsJSON = systemCreds
+                profiles[index].cliAccountUuid = profiles[index].cliAccountUuid ?? cliSyncService.systemAccountIdentity()
                 profiles[index].cliAccountSyncedAt = Date()
                 profileStore.saveProfiles(profiles)
 

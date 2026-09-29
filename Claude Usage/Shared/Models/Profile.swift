@@ -30,6 +30,9 @@ struct Profile: Codable, Identifiable, Equatable {
     // MARK: - CLI Account Sync Metadata
     var hasCliAccount: Bool
     var cliAccountSyncedAt: Date?
+    /// Claude account id (`oauthAccount.accountUuid` in ~/.claude.json) proven for this
+    /// profile's CLI login. Survives token rotation, unlike the tokens themselves.
+    var cliAccountUuid: String?
 
     // MARK: - Usage Data (Per-Profile)
     var claudeUsage: ClaudeUsage?
@@ -66,6 +69,7 @@ struct Profile: Codable, Identifiable, Equatable {
         cliCredentialsJSON: String? = nil,
         hasCliAccount: Bool = false,
         cliAccountSyncedAt: Date? = nil,
+        cliAccountUuid: String? = nil,
         claudeUsage: ClaudeUsage? = nil,
         apiUsage: APIUsage? = nil,
         iconConfig: MenuBarIconConfiguration = .default,
@@ -89,6 +93,7 @@ struct Profile: Codable, Identifiable, Equatable {
         self.cliCredentialsJSON = cliCredentialsJSON
         self.hasCliAccount = hasCliAccount
         self.cliAccountSyncedAt = cliAccountSyncedAt
+        self.cliAccountUuid = cliAccountUuid
         self.claudeUsage = claudeUsage
         self.apiUsage = apiUsage
         self.iconConfig = iconConfig

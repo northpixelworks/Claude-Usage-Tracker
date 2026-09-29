@@ -37,25 +37,38 @@ class ClaudeCodeSyncService {
     /// 2. System Keychain (may be truncated for large payloads >2KB)
     /// 3. Regex extraction of accessToken from truncated keychain data (last resort)
     func readSystemCredentials() throws -> String? {
-        // 1. Try credentials file first (most reliable)
-        if let fileJSON = readCredentialsFile() {
-            LoggingService.shared.log("Read credentials from .credentials.json file")
-            return fileJSON
-        }
+        // On macOS Claude Code rotates the KEYCHAIN only; the file is usually a stale
+        // mirror. Read both and prefer the fresher (later expiresAt; tie → keychain).
+        let fileJSON = readCredentialsFile()
 
         // 2. Try keychain
-        let keychainData = try readKeychainCredentials()
+        let keychainData: String?
+        do {
+            keychainData = try readKeychainCredentials()
+        } catch {
+            if let fileJSON { return fileJSON }
+            throw error
+        }
 
         guard let rawJSON = keychainData else {
-            // No credentials anywhere
-            return nil
+            // No keychain entry; the file (if any) is all we have
+            return fileJSON
         }
 
         // 3. Validate keychain JSON
         if let data = rawJSON.data(using: .utf8),
            let _ = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let fileJSON,
+               let fileExpiry = extractTokenExpiry(from: fileJSON),
+               fileExpiry > (extractTokenExpiry(from: rawJSON) ?? .distantPast) {
+                LoggingService.shared.log("Using .credentials.json (fresher than keychain)")
+                return fileJSON
+            }
             return rawJSON
         }
+
+        // Keychain data is truncated; the complete file wins if present
+        if let fileJSON { return fileJSON }
 
         // 4. Keychain data is truncated/invalid — try regex extraction
         LoggingService.shared.log("Keychain JSON is invalid (likely truncated), attempting regex extraction")
@@ -343,21 +356,6 @@ class ClaudeCodeSyncService {
         let serviceName = resolveServiceName()
         LoggingService.shared.log("Writing credentials to keychain using security command (service: \(serviceName))")
 
-        // First, delete existing item (best-effort; ignore failures)
-        if let deleteResult = runSecurityCommand(arguments: [
-            "delete-generic-password",
-            "-s", serviceName,
-            "-a", NSUserName()
-        ]) {
-            if deleteResult.timedOut {
-                LoggingService.shared.log("writeSystemCredentials: delete step timed out, proceeding with add")
-            } else if deleteResult.exitCode == 0 {
-                LoggingService.shared.log("Deleted existing keychain item")
-            } else {
-                LoggingService.shared.log("No existing keychain item to delete (or delete failed with code \(deleteResult.exitCode))")
-            }
-        }
-
         // Add new item using security command
         guard let addResult = runSecurityCommand(arguments: [
             "add-generic-password",
@@ -403,6 +401,7 @@ class ClaudeCodeSyncService {
         }
 
         profiles[index].cliCredentialsJSON = jsonData
+        profiles[index].cliAccountUuid = systemAccountIdentity()
         ProfileStore.shared.saveProfiles(profiles)
 
         LoggingService.shared.log("Synced CLI credentials to profile: \(profileId)")
@@ -502,6 +501,185 @@ class ClaudeCodeSyncService {
         }
     }
 
+    // MARK: - Active Profile Continuity & Idle Refresh
+    // Fork adaptation of upstream #268 (c75607c) and the single-writer model (eee15cf).
+    // Claude Code rotates BOTH tokens on refresh, so token equality alone breaks after
+    // every rotation and the tracker went dormant. The account id from ~/.claude.json
+    // survives rotation and proves the same login.
+
+    private static let oauthRefreshURL = URL(string: "https://platform.claude.com/v1/oauth/token")!
+    private static let defaultOAuthClientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+
+    /// In-flight idle refresh, so concurrent fetches never spend the refresh token twice.
+    @MainActor private var idleRefreshTask: Task<String?, Never>?
+
+    /// Account id of the login Claude Code currently holds (`oauthAccount.accountUuid`,
+    /// email as fallback), or nil if ~/.claude.json is missing/unreadable.
+    func systemAccountIdentity() -> String? {
+        let candidates = [
+            Constants.ClaudePaths.homeDirectory.appendingPathComponent(".claude.json"),
+            Constants.ClaudePaths.claudeDirectory.appendingPathComponent(".claude.json")
+        ]
+        for url in candidates {
+            guard let data = try? Data(contentsOf: url),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let account = json["oauthAccount"] as? [String: Any] else { continue }
+            if let uuid = account["accountUuid"] as? String, !uuid.isEmpty { return uuid }
+            if let email = account["emailAddress"] as? String, !email.isEmpty { return "email:\(email.lowercased())" }
+        }
+        return nil
+    }
+
+    /// True when the system login provably belongs to `profile`: a shared token
+    /// (unrotated) or the same recorded Claude account id (rotated).
+    func systemCredentialsBelong(to profile: Profile, systemJSON: String) -> Bool {
+        if Self.credentialsMatch(profile.cliCredentialsJSON, systemJSON) { return true }
+        guard let recorded = profile.cliAccountUuid else { return false }
+        return recorded == systemAccountIdentity()
+    }
+
+    func extractRefreshToken(from jsonData: String) -> String? {
+        guard let data = jsonData.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let oauth = json["claudeAiOauth"] as? [String: Any],
+              let token = oauth["refreshToken"] as? String, !token.isEmpty else { return nil }
+        return token
+    }
+
+    /// Synchronous gate: can the active Claude profile be served by the system login,
+    /// counting an expired token that is refreshable (idle CLI after sleep)?
+    func hasUsableSystemCredentials(for profile: Profile) -> Bool {
+        guard profile.providerKind == .claude,
+              let systemJSON = try? readSystemCredentials(),
+              extractAccessToken(from: systemJSON) != nil,
+              systemCredentialsBelong(to: profile, systemJSON: systemJSON) else { return false }
+        return !isTokenExpired(systemJSON) || extractRefreshToken(from: systemJSON) != nil
+    }
+
+    /// Returns usable system credentials for the ACTIVE Claude profile and mirrors them
+    /// into the profile (keeps the continuity chain across rotations). If the token has
+    /// expired, Claude Code is idle (it refreshes ~60s before expiry while in use), so the
+    /// tracker refreshes ONCE and writes the rotated lineage back to the keychain (+ file
+    /// mirror) so the CLI picks it up seamlessly on its next run.
+    @MainActor
+    func freshSystemCredentials(for profile: Profile) async -> String? {
+        guard profile.providerKind == .claude,
+              let systemJSON = try? readSystemCredentials(),
+              systemCredentialsBelong(to: profile, systemJSON: systemJSON) else { return nil }
+
+        if !isTokenExpired(systemJSON) {
+            mirrorSystemCredentials(systemJSON, into: profile.id)
+            return systemJSON
+        }
+
+        if let running = idleRefreshTask { return await running.value }
+        let task = Task<String?, Never> { @MainActor [weak self] in
+            guard let self else { return nil }
+            defer { self.idleRefreshTask = nil }
+            return await self.refreshIdleSystemCredentials(systemJSON, profileId: profile.id)
+        }
+        idleRefreshTask = task
+        return await task.value
+    }
+
+    @MainActor
+    private func refreshIdleSystemCredentials(_ systemJSON: String, profileId: UUID) async -> String? {
+        // Re-read: the CLI may have refreshed while we waited.
+        if let latest = try? readSystemCredentials(), !isTokenExpired(latest) {
+            mirrorSystemCredentials(latest, into: profileId)
+            return latest
+        }
+        guard let refreshToken = extractRefreshToken(from: systemJSON) else { return nil }
+        do {
+            let refreshed = try await performTokenRefresh(refreshToken: refreshToken)
+            guard let updatedJSON = mergeRefreshedCredentials(into: systemJSON, refreshed: refreshed) else {
+                LoggingService.shared.logError("Idle refresh: could not merge refreshed credentials")
+                return nil
+            }
+            do {
+                try writeSystemCredentials(updatedJSON)
+                writeCredentialsFileIfPresent(updatedJSON)
+            } catch {
+                LoggingService.shared.logError("Idle refresh: refreshed tokens but keychain writeback failed — CLI may need /login", error: error)
+            }
+            mirrorSystemCredentials(updatedJSON, into: profileId)
+            LoggingService.shared.log("✓ Idle refresh: renewed expired Claude Code token and wrote it back to the keychain")
+            return updatedJSON
+        } catch {
+            LoggingService.shared.logError("Idle refresh failed (non-fatal)", error: error)
+            return nil
+        }
+    }
+
+    /// Stores verified system credentials on the profile and records the account id.
+    @MainActor
+    private func mirrorSystemCredentials(_ json: String, into profileId: UUID) {
+        let recorded = ProfileManager.shared.profiles.first(where: { $0.id == profileId })?.cliAccountUuid
+        ProfileManager.shared.mirrorCLICredentials(json, accountUuid: recorded ?? systemAccountIdentity(), for: profileId)
+    }
+
+    /// Keeps an existing ~/.claude/.credentials.json mirror in step (0600); never creates one.
+    private func writeCredentialsFileIfPresent(_ json: String) {
+        let url = Constants.ClaudePaths.claudeDirectory.appendingPathComponent(".credentials.json")
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        do {
+            try Data(json.utf8).write(to: url, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        } catch {
+            LoggingService.shared.logError("Idle refresh: could not update .credentials.json mirror", error: error)
+        }
+    }
+
+    private struct OAuthRefreshResponse: Decodable {
+        let access_token: String
+        let refresh_token: String?
+        let expires_in: Int
+    }
+
+    /// Posts the `refresh_token` grant to platform.claude.com.
+    private func performTokenRefresh(refreshToken: String) async throws -> OAuthRefreshResponse {
+        let clientId = ProcessInfo.processInfo.environment["CLAUDE_CODE_OAUTH_CLIENT_ID"]
+            ?? Self.defaultOAuthClientID
+        var components = URLComponents()
+        components.queryItems = [
+            URLQueryItem(name: "grant_type", value: "refresh_token"),
+            URLQueryItem(name: "refresh_token", value: refreshToken),
+            URLQueryItem(name: "client_id", value: clientId),
+        ]
+        var request = URLRequest(url: Self.oauthRefreshURL)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Data((components.percentEncodedQuery ?? "").utf8)
+        request.timeoutInterval = 10
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            // 4xx bodies are {"error": ...} payloads without tokens — safe to log.
+            let snippet = String(data: data, encoding: .utf8)?.prefix(200) ?? ""
+            throw NSError(domain: "ClaudeCodeSyncService.refresh", code: status,
+                          userInfo: [NSLocalizedDescriptionKey: "Token refresh HTTP \(status): \(snippet)"])
+        }
+        return try JSONDecoder().decode(OAuthRefreshResponse.self, from: data)
+    }
+
+    /// Merges a refresh response into the `claudeAiOauth` payload, preserving other fields.
+    private func mergeRefreshedCredentials(into cliJSON: String, refreshed: OAuthRefreshResponse) -> String? {
+        guard let data = cliJSON.data(using: .utf8),
+              var root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              var oauth = root["claudeAiOauth"] as? [String: Any] else { return nil }
+        oauth["accessToken"] = refreshed.access_token
+        if let newRefreshToken = refreshed.refresh_token {
+            oauth["refreshToken"] = newRefreshToken
+        }
+        // Claude Code stores expiresAt in milliseconds since epoch.
+        oauth["expiresAt"] = Int64(Date().timeIntervalSince1970 * 1000) + Int64(refreshed.expires_in) * 1000
+        root["claudeAiOauth"] = oauth
+        // Single-line JSON: newlines corrupt `security add-generic-password -w` payloads.
+        guard let out = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys]) else { return nil }
+        return String(data: out, encoding: .utf8)
+    }
+
     // MARK: - Auto Re-sync Before Switching
 
     /// Re-syncs credentials from system Keychain before profile switching
@@ -529,11 +707,12 @@ class ClaudeCodeSyncService {
             return
         }
 
-        guard Self.credentialsMatch(profiles[index].cliCredentialsJSON, freshJSON) else {
+        guard systemCredentialsBelong(to: profiles[index], systemJSON: freshJSON) else {
             LoggingService.shared.log("Skipping automatic CLI sync: account identity could not be verified")
             return
         }
         profiles[index].cliCredentialsJSON = freshJSON
+        profiles[index].cliAccountUuid = profiles[index].cliAccountUuid ?? systemAccountIdentity()
         profiles[index].cliAccountSyncedAt = Date()  // Update sync timestamp
         ProfileStore.shared.saveProfiles(profiles)
 

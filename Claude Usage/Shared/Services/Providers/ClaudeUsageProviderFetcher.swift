@@ -44,22 +44,25 @@ class ClaudeUsageProviderFetcher: UsageProviderFetcher {
             return try await apiService.fetchUsageData(sessionKey: sessionKey, organizationId: orgId)
         }
 
-        // Priority 2: Saved CLI OAuth token from profile
+        // Priority 2: Active profile — system CLI login (Claude Code keeps it fresh).
+        // Verified by token or account id, mirrored into the profile, and refreshed
+        // once with keychain writeback when an idle CLI let it expire (#268).
+        if profile.id == ProfileManager.shared.activeProfile?.id,
+           let systemCredentials = await ClaudeCodeSyncService.shared.freshSystemCredentials(for: profile),
+           !ClaudeCodeSyncService.shared.isTokenExpired(systemCredentials),
+           let accessToken = ClaudeCodeSyncService.shared.extractAccessToken(from: systemCredentials) {
+            var usage = try await apiService.fetchUsageData(oauthAccessToken: accessToken)
+            await supplementOverageIfNeeded(&usage, profile: profile)
+            return usage
+        }
+
+        // Priority 3: Saved CLI OAuth token from profile (non-active profiles never
+        // touch the system login, whose lineage belongs to the active account).
         if let cliJSON = profile.cliCredentialsJSON,
            !ClaudeCodeSyncService.shared.isTokenExpired(cliJSON),
            let accessToken = ClaudeCodeSyncService.shared.extractAccessToken(from: cliJSON) {
             var usage = try await apiService.fetchUsageData(oauthAccessToken: accessToken)
             // CLI OAuth can't fetch org-scoped overage data; supplement via session key if available
-            await supplementOverageIfNeeded(&usage, profile: profile)
-            return usage
-        }
-
-        // Priority 3: System Keychain CLI OAuth token
-        if let systemCredentials = try? ClaudeCodeSyncService.shared.readSystemCredentials(),
-           ClaudeCodeSyncService.credentialsMatch(profile.cliCredentialsJSON, systemCredentials),
-           !ClaudeCodeSyncService.shared.isTokenExpired(systemCredentials),
-           let accessToken = ClaudeCodeSyncService.shared.extractAccessToken(from: systemCredentials) {
-            var usage = try await apiService.fetchUsageData(oauthAccessToken: accessToken)
             await supplementOverageIfNeeded(&usage, profile: profile)
             return usage
         }

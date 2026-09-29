@@ -1010,18 +1010,9 @@ class MenuBarManager: NSObject, ObservableObject {
             return false
         }
 
-        do {
-            if let systemCreds = try ClaudeCodeSyncService.shared.readSystemCredentials(),
-               ClaudeCodeSyncService.credentialsMatch(profile.cliCredentialsJSON, systemCreds),
-               !ClaudeCodeSyncService.shared.isTokenExpired(systemCreds),
-               ClaudeCodeSyncService.shared.extractAccessToken(from: systemCreds) != nil {
-                return true
-            }
-        } catch {
-            LoggingService.shared.log("MenuBarManager.hasAnyAvailableCredentials: system credential check failed: \(error.localizedDescription)")
-        }
-
-        return false
+        // Counts an expired-but-refreshable login too, so an idle CLI after sleep
+        // gets refreshed instead of leaving the tracker dormant (#268).
+        return ClaudeCodeSyncService.shared.hasUsableSystemCredentials(for: profile)
     }
 
     private func setupMultiProfileMode() {
