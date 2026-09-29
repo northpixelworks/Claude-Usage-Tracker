@@ -7,21 +7,21 @@ final class ClaudeUsageTests: XCTestCase {
     // MARK: - Status Level Tests (Deprecated Property - uses remaining-based thresholds)
 
     func testStatusLevelSafe() {
-        // statusLevel uses remaining-based thresholds: safe when remaining >= 20%
+        // Remaining-based thresholds: safe when remaining >= 30%
         let usage = createUsage(sessionPercentage: 0)  // 100% remaining
         XCTAssertEqual(UsageStatusCalculator.calculateStatus(usedPercentage: usage.effectiveSessionPercentage, showRemaining: true), .safe)
 
         let usage25 = createUsage(sessionPercentage: 25)  // 75% remaining
         XCTAssertEqual(UsageStatusCalculator.calculateStatus(usedPercentage: usage25.effectiveSessionPercentage, showRemaining: true), .safe)
 
-        let usage80 = createUsage(sessionPercentage: 80)  // 20% remaining (exact boundary)
-        XCTAssertEqual(UsageStatusCalculator.calculateStatus(usedPercentage: usage80.effectiveSessionPercentage, showRemaining: true), .safe)
+        let usage70 = createUsage(sessionPercentage: 70)  // 30% remaining (exact boundary)
+        XCTAssertEqual(UsageStatusCalculator.calculateStatus(usedPercentage: usage70.effectiveSessionPercentage, showRemaining: true), .safe)
     }
 
     func testStatusLevelModerate() {
-        // statusLevel uses remaining-based thresholds: moderate when 10% <= remaining < 20%
-        let usage81 = createUsage(sessionPercentage: 81)  // 19% remaining
-        XCTAssertEqual(UsageStatusCalculator.calculateStatus(usedPercentage: usage81.effectiveSessionPercentage, showRemaining: true), .moderate)
+        // Remaining-based thresholds: moderate when 10% <= remaining < 30%
+        let usage71 = createUsage(sessionPercentage: 71)  // 29% remaining
+        XCTAssertEqual(UsageStatusCalculator.calculateStatus(usedPercentage: usage71.effectiveSessionPercentage, showRemaining: true), .moderate)
 
         let usage85 = createUsage(sessionPercentage: 85)  // 15% remaining
         XCTAssertEqual(UsageStatusCalculator.calculateStatus(usedPercentage: usage85.effectiveSessionPercentage, showRemaining: true), .moderate)
