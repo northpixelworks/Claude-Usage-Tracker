@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Flaky hook-server tests**: `NotchHookServerTests` no longer fails intermittently with connection refused on port 19847; setUp/tearDown now wait for the server to report `.running` / `.stopped` instead of trusting stale status from the previous test.
 - **Account isolation**: Automatic CLI sync and fallback now require matching token continuity; unrelated logins cannot overwrite other profiles.
 - **Credential storage**: Migrate profile secrets into the encrypted macOS login Keychain, verifying the copy before removing plaintext preferences. Preserve the previous save if Keychain access fails.
 - **Refresh correctness**: Consolidate single/multi-profile refreshes, reject stale responses, and save results under the initiating account. Codex/Copilot errors retain cached data and report failure; partial batch failures no longer count as successful refreshes.

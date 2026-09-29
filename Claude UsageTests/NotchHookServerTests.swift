@@ -12,18 +12,26 @@ final class NotchHookServerTests: XCTestCase {
     override func setUp() async throws {
         NotchSessionStore.shared.reset()
         NotchHookServer.shared.start()
-        // Wait for the listener to come up (or fail on a busy port).
-        for _ in 0..<40 {
-            if NotchSessionStore.shared.serverStatus == .running { break }
-            try await Task.sleep(nanoseconds: 50_000_000)
-        }
+        // Wait for the listener to come up (or fail on a busy port). Covers the
+        // server's 1s/2s/4s port-retry backoff so a briefly held port isn't skipped.
+        try await waitForServerStatus(.running, attempts: 160)
         try XCTSkipUnless(NotchSessionStore.shared.serverStatus == .running,
                           "port \(Constants.NotchHUD.port) unavailable — another instance running?")
     }
 
     override func tearDown() async throws {
         NotchHookServer.shared.stop()
+        // stop() publishes `.stopped` asynchronously. Wait for it, otherwise the
+        // next setUp sees the stale `.running` and fires requests before the new
+        // listener is ready (connection refused).
+        try await waitForServerStatus(.stopped, attempts: 40)
         NotchSessionStore.shared.reset()
+    }
+
+    private func waitForServerStatus(_ status: NotchSessionStore.ServerStatus, attempts: Int) async throws {
+        for _ in 0..<attempts where NotchSessionStore.shared.serverStatus != status {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
     }
 
     private func post(_ path: String, json: String) async throws -> Int {

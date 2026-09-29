@@ -482,3 +482,7 @@ Same strategy as §17: upstream built parallel versions of the fork's provider s
 - `openSettingsOnNextLaunch` opens settings once to recover from off-screen menu bar items on macOS 27.
 
 - GitHub battery markers and pace colors now use the provider’s calendar-month duration in single and multi-profile modes. Battery and tooltip labels identify the monthly premium quota.
+
+## 2026-09-29 test stability
+
+- `NotchHookServerTests`: tearDown waits for `.stopped` (up to 2 s), setUp waits for `.running` (up to 8 s, covers the 1s/2s/4s port-retry backoff) via shared `waitForServerStatus`. Fixes ~1-in-3 flaky -1004 connection-refused failures caused by stale `serverStatus` between tests. Test-only; no app code changed.
