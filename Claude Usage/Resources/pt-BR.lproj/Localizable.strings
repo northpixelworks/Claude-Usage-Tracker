@@ -59,6 +59,8 @@
 "menubar.weekly_usage" = "Semanal";
 "menubar.opus_usage" = "Opus";
 "menubar.sonnet_usage" = "Sonnet";
+"menubar.fable_usage" = "Fable";
+"menubar.design_usage" = "Design";
 "menubar.extra_usage" = "Uso Extra";
 "menubar.api_credits" = "Créditos da API";
 "menubar.5_hour_window" = "Janela móvel de 5 horas";
@@ -345,6 +347,11 @@
 "claudecode.component_pace_marker" = "Marcador de ritmo";
 "claudecode.pace_marker_info" = "Mostra uma marca colorida na posição do tempo decorrido";
 "claudecode.component_resettime" = "Hora de reinício";
+"claudecode.component_weekly" = "Mostrar uso semanal";
+"claudecode.component_weekly_description" = "Uso semanal de tokens com barra e tempo de reinício";
+"claudecode.component_extra_usage" = "Mostrar uso extra";
+"claudecode.component_extra_usage_description" = "Indicador de custo (ex., 9,49 USD)";
+"claudecode.weekly_label" = "Mostrar rótulo \"Weekly:\"";
 "claudecode.requirement_sessionkey" = "• Chave de sessão configurada em Credenciais → aba Claude.ai";
 "claudecode.requirement_restart" = "• Reiniciar Claude CLI após aplicar as alterações";
 "claudecode.error_no_components" = "Por favor, selecione pelo menos um componente para exibir";
@@ -466,6 +473,21 @@
 "claudecode.button_reset" = "Redefinir";
 "claudecode.component_profile" = "Nome do perfil";
 "claudecode.context_info" = "O contexto pode mostrar ~80-95% em vez de 100% — o Claude comprime automaticamente antes do limite, e os tokens de saída também usam espaço de contexto.";
+"claudecode.element_colors_title" = "Cores dos Elementos";
+"claudecode.element_color_directory" = "Diretório";
+"claudecode.element_color_branch" = "Branch";
+"claudecode.element_color_model" = "Modelo";
+"claudecode.element_color_profile" = "Perfil";
+"claudecode.element_color_context" = "Contexto";
+"claudecode.element_color_separator" = "Separador";
+"claudecode.element_color_usage" = "Gradiente de uso";
+"claudecode.element_color_usage_desc" = "Substituir o gradiente de 10 níveis por uma cor fixa";
+"claudecode.element_color_pace" = "Marcador de ritmo";
+"claudecode.element_color_pace_desc" = "Substituir as cores de ritmo de 6 níveis por uma cor fixa";
+"claudecode.element_color_weekly" = "Uso semanal";
+"claudecode.element_color_weekly_desc" = "Substituir o gradiente de uso semanal por uma cor fixa";
+"claudecode.element_color_extra" = "Uso extra";
+"claudecode.element_color_extra_desc" = "Substituir o gradiente de uso extra (custo) por uma cor fixa";
 "error.generic" = "Erro: %@";
 "personal.button_saving" = "Salvando...";
 "personal.button_setup_wizard" = "Assistente de Configuração";
@@ -531,6 +553,8 @@
 "multiprofile.show_label_description" = "Exibir nome do perfil abaixo do ícone";
 "multiprofile.use_system_color" = "Usar Cor do Sistema";
 "multiprofile.use_system_color_description" = "Usar a cor de destaque do Mac em vez das cores de status";
+"multiprofile.active_indicator_title" = "Mostrar Indicador de Perfil Ativo";
+"multiprofile.active_indicator_description" = "Mostra um pequeno sublinhado verde sob o ícone do perfil atualmente ativo";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */
@@ -943,3 +967,129 @@
 "notifications.sound.default" = "Padrão";
 "notifications.sound.none" = "Nenhum";
 "notifications.sound.preview" = "Pré-visualizar som";
+
+/* Claude Code Notch HUD */
+"notch.hud.section_title" = "Dynamic Island";
+"notch.hud.section_desc" = "Uma exibição minimalista junto ao notch mostrando o que o Claude Code está fazendo";
+"notch.hud.enable" = "Ativar Dynamic Island";
+"notch.hud.enable_desc" = "Instala hooks do Claude Code e mostra a atividade da sessão ao vivo junto ao notch";
+"notch.hud.auto_hide" = "Ocultar automaticamente quando ocioso";
+"notch.hud.auto_hide_desc" = "Oculta o HUD alguns segundos depois de todas as sessões ficarem ociosas";
+"notch.hud.expanded_title" = "Claude Code";
+"notch.no_sessions" = "Nenhuma sessão ativa";
+"notch.status.thinking" = "Pensando…";
+"notch.status.writing_code" = "Escrevendo…";
+"notch.status.reading_files" = "Lendo…";
+"notch.status.running_command" = "Executando…";
+"notch.status.needs_attention" = "Requer atenção";
+"notch.status.idle" = "Concluído";
+"notch.task.running_command" = "Executando comando";
+"notch.task.writing" = "Escrevendo %@";
+"notch.task.editing" = "Editando %@";
+"notch.task.reading" = "Lendo %@";
+"notch.task.searching" = "Pesquisando arquivos";
+"notch.task.subagent" = "Executando subagente";
+"notch.task.web" = "Navegando na web";
+"notch.hooks.title" = "Hooks do Claude Code";
+"notch.hooks.desc" = "O HUD recebe eventos por meio de hooks em ~/.claude/settings.json";
+"notch.hooks.status_installed" = "Hooks instalados";
+"notch.hooks.status_partial" = "Hooks parcialmente instalados";
+"notch.hooks.status_not_installed" = "Hooks não configurados";
+"notch.hooks.status_legacy" = "Hooks de uma versão anterior detectados — serão substituídos ao ativar o HUD.";
+"notch.hooks.install" = "Instalar";
+"notch.hooks.repair" = "Reparar";
+"notch.hooks.remove" = "Remover";
+"notch.server.listening" = "Escutando em %@";
+"notch.server.port_busy" = "A porta %@ está em uso — outra cópia do app está em execução?";
+"notch.server.retry" = "Tentar novamente";
+
+/* Backfilled keys (localization parity) */
+"about.contributors_failed" = "Não foi possível carregar os colaboradores";
+"appearance.all_metrics_off_title" = "Modo de logotipo";
+"appearance.all_metrics_off_description" = "Todas as métricas estão desativadas. O logotipo do app será mostrado na barra de menus. Clique nele para acessar perfis e ajustes.";
+"common.retry" = "Tentar novamente";
+"menubar.api_cost" = "Custo de API";
+"menubar.cost_source.api" = "API";
+"menubar.cost_source.cli" = "Claude Code";
+"menubar.cost_source.unknown" = "Outro";
+"menubar.this_month" = "Este mês";
+"menubar.total" = "Total";
+"settings.updates" = "Atualizações";
+"settings.updates.description" = "Mantenha o app atualizado";
+"multiprofile.style_circles" = "Círculos";
+"multiprofile.style_bars" = "Barras";
+"multiprofile.style_dots" = "Pontos";
+"multiprofile.style_percent" = "Porcentagem";
+
+/* Sponsor slot */
+"sponsor.slot_title" = "Este espaço está disponível para patrocinadores";
+"sponsor.slot_cta" = "Entre em contato";
+
+/* Multi-Provider / OpenAI Codex */
+"section.codex_account_title" = "Conta Codex";
+"section.codex_account_desc" = "Conecte sua conta OpenAI Codex";
+"profiles.provider_label" = "Provedor";
+"profiles.provider_hint" = "Qual serviço este perfil acompanha. Não pode ser alterado depois.";
+"usage.window.session" = "Sessão";
+"usage.window.weekly" = "Semanal";
+"popover.credits_unlimited" = "Créditos ilimitados";
+"popover.credits_balance" = "Créditos: %@";
+"codex.title" = "Conta OpenAI Codex";
+"codex.subtitle" = "Acompanhe seus limites de uso do Codex";
+"codex.connected" = "Conectado";
+"codex.not_connected" = "Não conectado";
+"codex.source_manual" = "Usando credenciais salvas manualmente";
+"codex.source_authfile" = "Lendo da CLI do Codex (auth.json)";
+"codex.signed_in_as" = "Conectado como %@";
+"codex.test_connection" = "Testar conexão";
+"codex.cli_detection_title" = "CLI do Codex";
+"codex.cli_detection_subtitle" = "As credenciais são lidas de ~/.codex/auth.json";
+"codex.cli_detected" = "CLI do Codex detectada";
+"codex.last_refresh" = "Tokens atualizados %@";
+"codex.live_read_note" = "As credenciais são lidas ao vivo do auth.json — entre ou saia com a CLI do Codex e este perfil acompanha automaticamente.";
+"codex.cli_not_detected" = "CLI do Codex não detectada";
+"codex.cli_not_detected_hint" = "Instale a CLI do Codex e execute `codex` para entrar, ou cole as credenciais abaixo.";
+"codex.rescan" = "Escanear novamente";
+"codex.test_success" = "Conexão OK";
+"codex.test_success_plan" = "Conectado — plano %@";
+"codex.manual_title" = "Credenciais manuais";
+"codex.manual_subtitle" = "Cole o conteúdo do auth.json se a CLI não estiver neste Mac";
+"codex.manual_saved" = "Credenciais manuais salvas";
+"codex.manual_remove" = "Remover";
+"codex.manual_save" = "Salvar credenciais";
+"setup.choose_provider.subtitle" = "Qual serviço você quer acompanhar?";
+"setup.choose_provider.anthropic_hint" = "Uso do Claude.ai, Claude Code e Console";
+"setup.choose_provider.codex_hint" = "Limites de uso da CLI OpenAI Codex";
+"setup.choose_provider.skip" = "Pular por enquanto";
+"setup.codex_detected.title" = "CLI do Codex detectada";
+"setup.codex_detected.description" = "Suas credenciais da CLI do Codex foram encontradas. Comece a acompanhar seus limites de uso agora mesmo.";
+"setup.codex_not_detected.title" = "Conectar Codex";
+"setup.codex_not_detected.description" = "Nenhum login da CLI do Codex encontrado. Execute `codex` para entrar ou cole o conteúdo de ~/.codex/auth.json abaixo.";
+"notification.usage_updated.title" = "Uso atualizado";
+"notification.usage_updated.body" = "Dados de uso carregados com sucesso";
+"error.codex_credentials_invalid" = "Não foi possível ler as credenciais do Codex";
+"error.codex_credentials_invalid.suggestion" = "Cole o conteúdo completo de ~/.codex/auth.json";
+"error.codex_credentials_not_found" = "Nenhuma credencial do Codex encontrada";
+"error.codex_credentials_not_found.suggestion" = "Execute `codex` para entrar ou cole as credenciais em Ajustes";
+"error.codex_auth_expired" = "Login do Codex expirado";
+"error.codex_auth_expired.suggestion" = "Execute `codex` no terminal para entrar novamente";
+"error.codex_auth_refresh_failed" = "Não foi possível renovar o login do Codex";
+"error.codex_invalid_response" = "Resposta inesperada da API de uso do Codex";
+"error.codex_server_error" = "A API de uso do Codex retornou um erro";
+
+// MARK: - Terminal Launcher
+"launcher.title" = "Atalho de terminal";
+"launcher.subtitle" = "Execute o Claude Code com este perfil de qualquer terminal";
+"launcher.description" = "Instala um comando %@. O comando claude comum continua usando o perfil ativo; o atalho sempre abre o login do Claude Code próprio deste perfil.";
+"launcher.install" = "Instalar atalho";
+"launcher.remove" = "Remover";
+"launcher.login_needed" = "Configuração única: execute %@ no terminal e faça login com /login. Depois o app vincula e acompanha essa conta automaticamente.";
+"launcher.pinned" = "Vinculado — o acompanhamento de uso segue este login.";
+"launcher.verify" = "Verificar login";
+"launcher.path_warning" = "~/.local/bin não está no seu PATH. Adicione esta linha ao perfil do shell:";
+"launcher.install_failed" = "Não foi possível instalar o atalho: %@";
+"support.popup_title" = "Oi, eu sou o Hamed 👋";
+"support.popup_later" = "Talvez depois";
+"support.popup_signature" = "o time de uma pessoa só por trás do Claude Usage";
+"support.popup_body" = "Grátis, open source, feito por uma pessoa só — sem anúncios nem rastreamento. Se já salvou você de queimar um limite de sessão, um café o mantém vivo.";
+"support.popup_days" = "De olho nos seus limites há %d dias — sempre grátis";

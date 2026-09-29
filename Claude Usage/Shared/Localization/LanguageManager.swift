@@ -60,6 +60,8 @@ class LanguageManager: ObservableObject {
         case japanese = "ja"
         case korean = "ko"
         case zhCn = "zh-cn"
+        case zhHant = "zh-Hant"
+        case ukrainian = "uk"
         case turkish = "tr"
         case vietnamese = "vi"
 
@@ -81,6 +83,8 @@ class LanguageManager: ObservableObject {
             case .japanese: return "日本語"
             case .korean: return "한국어"
             case .zhCn: return "简体中文"
+            case .zhHant: return "繁體中文"
+            case .ukrainian: return "Українська"
             case .turkish: return "Türkçe"
             case .vietnamese: return "Tiếng Việt"
             }
@@ -99,6 +103,8 @@ class LanguageManager: ObservableObject {
             case .japanese: return "Japanese"
             case .korean: return "Korean"
             case .zhCn: return "Simplified Chinese"
+            case .zhHant: return "Traditional Chinese"
+            case .ukrainian: return "Ukrainian"
             case .turkish: return "Turkish"
             case .vietnamese: return "Vietnamese"
             }
@@ -117,6 +123,8 @@ class LanguageManager: ObservableObject {
             case .japanese: return "🇯🇵"
             case .korean: return "🇰🇷"
             case .zhCn: return "🇨🇳"
+            case .zhHant: return "🇹🇼"
+            case .ukrainian: return "🇺🇦"
             case .turkish: return "🇹🇷"
             case .vietnamese: return "🇻🇳"
             }

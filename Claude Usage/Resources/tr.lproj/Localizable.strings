@@ -61,6 +61,8 @@
 "menubar.weekly_usage" = "Haftalık";
 "menubar.opus_usage" = "Opus";
 "menubar.sonnet_usage" = "Sonnet";
+"menubar.fable_usage" = "Fable";
+"menubar.design_usage" = "Tasarım";
 "menubar.extra_usage" = "Ek Kullanım";
 "menubar.api_credits" = "API Kredileri";
 "menubar.api_cost" = "API Maliyeti";
@@ -366,6 +368,13 @@
 "claudecode.component_usage" = "Kullanım istatistikleri";
 "claudecode.component_progressbar" = "İlerleme çubuğu";
 "claudecode.component_resettime" = "Sıfırlanma zamanı";
+"claudecode.component_pace_marker" = "Tempo işaretçisi";
+"claudecode.pace_marker_info" = "Tahmini kullanım temposuna göre renklendirilir (yeşil → mor)";
+"claudecode.component_weekly" = "Haftalık Kullanımı Göster";
+"claudecode.component_weekly_description" = "Çubuk ve sıfırlanma zamanı ile haftalık token kullanımı";
+"claudecode.component_extra_usage" = "Ekstra Kullanımı Göster";
+"claudecode.component_extra_usage_description" = "Maliyet göstergesi (ör. 9,49 USD)";
+"claudecode.weekly_label" = "\"Haftalık:\" etiketini göster";
 "claudecode.requirement_sessionkey" = "• Kimlik Bilgileri → Claude.ai sekmesinde oturum anahtarı yapılandırılmış olmalı";
 "claudecode.requirement_restart" = "• Değişiklikleri uyguladıktan sonra Claude CLI'ı yeniden başlatın";
 "claudecode.error_no_components" = "Lütfen görüntülenecek en az bir bileşen seçin";
@@ -450,6 +459,10 @@
 "appearance.show_time_marker_description" = "İlerleme çubuklarında zaman diliminin ne kadarının geçtiğini gösteren bir işaret göster";
 "appearance.pace_coloring_title" = "Tempo Duyarlı Renklendirme";
 "appearance.pace_coloring_description" = "Göstergeleri tahmini kullanım temposuna göre renklendir. Kapalıyken renkler yalnızca mevcut kullanımı yansıtır.";
+"appearance.pace_marker_section_title" = "Tempo İşaretçisi";
+"appearance.pace_marker_section_subtitle" = "Sıfırlama dönemlerine göre kullanım temposunu takip edin";
+"appearance.show_pace_marker_title" = "İşaretçiyi Tempoya Göre Renklendir";
+"appearance.show_pace_marker_description" = "Zaman işaretçisini tahmini kullanım temposuna göre renklendir (yeşil → mor). Oturum ve haftalık metriklere uygulanır.";
 "appearance.multiprofile_locked_title" = "Görünüm Ayarları Kilitli";
 "appearance.multiprofile_locked_description" = "Çoklu Profil Görünümü etkinken bu ayarlar devre dışıdır. Çoklu profil modunda her profil kendi görünümünü kullanır.";
 "appearance.disable_multiprofile" = "Çoklu Profil Görünümünü Kapat";
@@ -524,6 +537,8 @@
 "multiprofile.show_label_description" = "Simgenin altında profil adını göster";
 "multiprofile.use_system_color" = "Tek Renk";
 "multiprofile.use_system_color_description" = "Durum renkleri (yeşil/turuncu/kırmızı) yerine beyaz renk kullan";
+"multiprofile.active_indicator_title" = "Aktif Profil Göstergesini Göster";
+"multiprofile.active_indicator_description" = "Şu anda aktif olan profilin simgesinin altında küçük bir yeşil alt çizgi gösterir";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */
@@ -703,6 +718,21 @@
 "claudecode.actions_title" = "İşlemler";
 "claudecode.component_profile" = "Profil adı";
 "claudecode.context_info" = "Bağlam %100 yerine ~%80-95 gösterebilir — Claude limit öncesinde otomatik sıkıştırma yapar ve çıktı token'ları da bağlam alanı kullanır.";
+"claudecode.element_colors_title" = "Öğe Renkleri";
+"claudecode.element_color_directory" = "Dizin";
+"claudecode.element_color_branch" = "Dal";
+"claudecode.element_color_model" = "Model";
+"claudecode.element_color_profile" = "Profil";
+"claudecode.element_color_context" = "Bağlam";
+"claudecode.element_color_separator" = "Ayırıcı";
+"claudecode.element_color_usage" = "Kullanım gradyanı";
+"claudecode.element_color_usage_desc" = "10 seviyeli gradyanı sabit bir renkle değiştir";
+"claudecode.element_color_pace" = "Tempo işaretçisi";
+"claudecode.element_color_pace_desc" = "6 kademeli tempo renklerini sabit bir renkle değiştir";
+"claudecode.element_color_weekly" = "Haftalık kullanım";
+"claudecode.element_color_weekly_desc" = "Haftalık kullanım gradyanını sabit bir renkle değiştir";
+"claudecode.element_color_extra" = "Ekstra kullanım";
+"claudecode.element_color_extra_desc" = "Ekstra kullanım (maliyet) gradyanını sabit bir renkle değiştir";
 "error.generic" = "Hata: %@";
 "personal.button_saving" = "Kaydediliyor...";
 "personal.button_setup_wizard" = "Kurulum Sihirbazı";
@@ -947,3 +977,111 @@
 "notifications.sound.default" = "Varsayılan";
 "notifications.sound.none" = "Yok";
 "notifications.sound.preview" = "Sesi önizle";
+
+/* Claude Code Notch HUD */
+"notch.hud.section_title" = "Dynamic Island";
+"notch.hud.section_desc" = "Claude Code'un ne yaptığını çentik yanında gösteren minimal bir ekran";
+"notch.hud.enable" = "Dynamic Island'ı etkinleştir";
+"notch.hud.enable_desc" = "Claude Code kancalarını kurar ve canlı oturum etkinliğini çentik yanında gösterir";
+"notch.hud.auto_hide" = "Boştayken otomatik gizle";
+"notch.hud.auto_hide_desc" = "Tüm oturumlar boşta kaldıktan birkaç saniye sonra HUD'u gizler";
+"notch.hud.expanded_title" = "Claude Code";
+"notch.no_sessions" = "Etkin oturum yok";
+"notch.status.thinking" = "Düşünüyor…";
+"notch.status.writing_code" = "Yazıyor…";
+"notch.status.reading_files" = "Okuyor…";
+"notch.status.running_command" = "Çalıştırıyor…";
+"notch.status.needs_attention" = "Girdi gerekli";
+"notch.status.idle" = "Bitti";
+"notch.task.running_command" = "Komut çalıştırılıyor";
+"notch.task.writing" = "%@ yazılıyor";
+"notch.task.editing" = "%@ düzenleniyor";
+"notch.task.reading" = "%@ okunuyor";
+"notch.task.searching" = "Dosyalar aranıyor";
+"notch.task.subagent" = "Alt aracı çalışıyor";
+"notch.task.web" = "Web'de geziniyor";
+"notch.hooks.title" = "Claude Code Kancaları";
+"notch.hooks.desc" = "HUD, olayları ~/.claude/settings.json içindeki kancalar aracılığıyla alır";
+"notch.hooks.status_installed" = "Kancalar kuruldu";
+"notch.hooks.status_partial" = "Kancalar kısmen kuruldu";
+"notch.hooks.status_not_installed" = "Kancalar yapılandırılmadı";
+"notch.hooks.status_legacy" = "Önceki sürüme ait kancalar algılandı — HUD etkinleştirildiğinde değiştirilecek.";
+"notch.hooks.install" = "Kur";
+"notch.hooks.repair" = "Onar";
+"notch.hooks.remove" = "Kaldır";
+"notch.server.listening" = "%@ üzerinde dinleniyor";
+"notch.server.port_busy" = "%@ bağlantı noktası kullanımda — uygulamanın başka bir kopyası mı çalışıyor?";
+"notch.server.retry" = "Yeniden dene";
+
+/* Sponsor slot */
+"sponsor.slot_title" = "Bu alan sponsorlara açıktır";
+"sponsor.slot_cta" = "İletişime geçin";
+
+/* Multi-Provider / OpenAI Codex */
+"section.codex_account_title" = "Codex Hesabı";
+"section.codex_account_desc" = "OpenAI Codex hesabınızı bağlayın";
+"profiles.provider_label" = "Sağlayıcı";
+"profiles.provider_hint" = "Bu profilin izlediği hizmet. Daha sonra değiştirilemez.";
+"usage.window.session" = "Oturum";
+"usage.window.weekly" = "Haftalık";
+"popover.credits_unlimited" = "Sınırsız kredi";
+"popover.credits_balance" = "Kredi: %@";
+"codex.title" = "OpenAI Codex Hesabı";
+"codex.subtitle" = "Codex kullanım limitlerinizi izleyin";
+"codex.connected" = "Bağlı";
+"codex.not_connected" = "Bağlı değil";
+"codex.source_manual" = "Elle kaydedilen kimlik bilgileri kullanılıyor";
+"codex.source_authfile" = "Codex CLI'dan okunuyor (auth.json)";
+"codex.signed_in_as" = "%@ olarak oturum açıldı";
+"codex.test_connection" = "Bağlantıyı Test Et";
+"codex.cli_detection_title" = "Codex CLI";
+"codex.cli_detection_subtitle" = "Kimlik bilgileri ~/.codex/auth.json dosyasından okunur";
+"codex.cli_detected" = "Codex CLI algılandı";
+"codex.last_refresh" = "Belirteçler yenilendi %@";
+"codex.live_read_note" = "Kimlik bilgileri auth.json dosyasından canlı okunur — Codex CLI ile oturum açın veya kapatın, bu profil otomatik olarak takip eder.";
+"codex.cli_not_detected" = "Codex CLI algılanmadı";
+"codex.cli_not_detected_hint" = "Codex CLI'ı kurun ve oturum açmak için `codex` çalıştırın veya kimlik bilgilerini aşağıya yapıştırın.";
+"codex.rescan" = "Yeniden Tara";
+"codex.test_success" = "Bağlantı Tamam";
+"codex.test_success_plan" = "Bağlandı — %@ planı";
+"codex.manual_title" = "Elle Kimlik Bilgileri";
+"codex.manual_subtitle" = "CLI bu Mac'te değilse auth.json içeriğini yapıştırın";
+"codex.manual_saved" = "Elle girilen kimlik bilgileri kaydedildi";
+"codex.manual_remove" = "Kaldır";
+"codex.manual_save" = "Kimlik Bilgilerini Kaydet";
+"setup.choose_provider.subtitle" = "Hangi hizmeti izlemek istiyorsunuz?";
+"setup.choose_provider.anthropic_hint" = "Claude.ai, Claude Code ve Console kullanımı";
+"setup.choose_provider.codex_hint" = "OpenAI Codex CLI kullanım limitleri";
+"setup.choose_provider.skip" = "Şimdilik atla";
+"setup.codex_detected.title" = "Codex CLI Algılandı";
+"setup.codex_detected.description" = "Codex CLI kimlik bilgileriniz bulundu. Kullanım limitlerinizi hemen izlemeye başlayın.";
+"setup.codex_not_detected.title" = "Codex'i Bağla";
+"setup.codex_not_detected.description" = "Codex CLI oturumu bulunamadı. Oturum açmak için `codex` çalıştırın veya ~/.codex/auth.json içeriğini aşağıya yapıştırın.";
+"notification.usage_updated.title" = "Kullanım Güncellendi";
+"notification.usage_updated.body" = "Kullanım verileri başarıyla yüklendi";
+"error.codex_credentials_invalid" = "Codex kimlik bilgileri okunamadı";
+"error.codex_credentials_invalid.suggestion" = "~/.codex/auth.json dosyasının tüm içeriğini yapıştırın";
+"error.codex_credentials_not_found" = "Codex kimlik bilgisi bulunamadı";
+"error.codex_credentials_not_found.suggestion" = "Oturum açmak için `codex` çalıştırın veya Ayarlar'da kimlik bilgilerini yapıştırın";
+"error.codex_auth_expired" = "Codex oturumu süresi doldu";
+"error.codex_auth_expired.suggestion" = "Yeniden oturum açmak için terminalde `codex` çalıştırın";
+"error.codex_auth_refresh_failed" = "Codex oturumu yenilenemedi";
+"error.codex_invalid_response" = "Codex kullanım API'sinden beklenmeyen yanıt";
+"error.codex_server_error" = "Codex kullanım API'si hata döndürdü";
+
+// MARK: - Terminal Launcher
+"launcher.title" = "Terminal Başlatıcı";
+"launcher.subtitle" = "Claude Code'u bu profille herhangi bir terminalden çalıştırın";
+"launcher.description" = "Bir %@ komutu yükler. Normal claude komutu etkin profili kullanmaya devam eder; başlatıcı her zaman bu profilin kendi Claude Code oturumunu açar.";
+"launcher.install" = "Başlatıcıyı Yükle";
+"launcher.remove" = "Kaldır";
+"launcher.login_needed" = "Tek seferlik kurulum: terminalde %@ komutunu çalıştırın ve /login ile giriş yapın. Uygulama daha sonra bu hesabı otomatik olarak bağlar ve izler.";
+"launcher.pinned" = "Bağlandı — kullanım takibi bu oturumu izler.";
+"launcher.verify" = "Oturumu Kontrol Et";
+"launcher.path_warning" = "~/.local/bin PATH içinde değil. Bu satırı kabuk profilinize ekleyin:";
+"launcher.install_failed" = "Başlatıcı yüklenemedi: %@";
+"support.popup_title" = "Merhaba, ben Hamed 👋";
+"support.popup_later" = "Belki sonra";
+"support.popup_signature" = "Claude Usage'ın arkasındaki tek kişilik ekip";
+"support.popup_body" = "Ücretsiz, açık kaynak, tek kişi tarafından yapıldı — reklam yok, izleme yok. Sizi bir oturum limitini yakmaktan kurtardıysa, bir kahve onu ayakta tutar.";
+"support.popup_days" = "%d gündür limitlerinizi izliyor — her zaman ücretsiz";
