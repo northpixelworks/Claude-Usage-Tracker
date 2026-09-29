@@ -26,19 +26,21 @@ class CodexUsageProviderFetcher: UsageProviderFetcher {
         let validation = authService.validateAuth()
         let showProviderDetails = SharedDataStore.shared.loadPopoverShowProviderDetails()
 
-        guard validation.isValid,
-              let authState = authService.readAuthState(),
-              let accessToken = authState.resolvedAccessToken,
-              !accessToken.isEmpty
-        else {
+        guard authService.readAuthState() != nil else {
             throw AppError(code: .apiUnauthorized, message: "Codex authentication is unavailable or expired.")
         }
 
         do {
-            let response = try await fetchUsageResponse(
-                accessToken: accessToken,
-                accountId: authState.tokens?.accountId ?? authState.accountId
-            )
+            // Refreshes stale tokens (8-day rule) and retries once after a 401 with a
+            // forced refresh, writing rotated tokens back to auth.json (upstream 52bc240).
+            let response: CodexUsageAPIResponse
+            let credentials = try await authService.freshCredentials()
+            do {
+                response = try await fetchUsageResponse(accessToken: credentials.accessToken, accountId: credentials.accountId)
+            } catch let error as AppError where error.code == .apiUnauthorized {
+                let refreshed = try await authService.freshCredentials(force: true)
+                response = try await fetchUsageResponse(accessToken: refreshed.accessToken, accountId: refreshed.accountId)
+            }
 
             var rows: [ProviderMetricRow] = []
             var cards: [ProviderSupplementaryCard] = [

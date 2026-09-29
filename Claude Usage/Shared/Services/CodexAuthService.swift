@@ -15,6 +15,9 @@ class CodexAuthService {
 
     private let authFileOverride: URL?
 
+    /// In-flight token refresh so concurrent fetches never reuse a rotated refresh token.
+    fileprivate var inflightRefresh: Task<(accessToken: String, accountId: String?), Error>?
+
     init(authFileURL: URL? = nil) { self.authFileOverride = authFileURL }
 
     /// Path to the Codex auth file
@@ -76,6 +79,116 @@ class CodexAuthService {
                 accountEmail: nil
             )
         }
+    }
+}
+
+// MARK: - Token Refresh
+// Ported from upstream v3.3.0 (52bc240), which mirrors the Codex CLI / CodexBar
+// discipline: refresh when last_refresh is older than 8 days or after a 401, rotate
+// the refresh token exactly once (OpenAI revokes the family on reuse), and write the
+// result back to auth.json atomically so the Codex CLI keeps working.
+
+extension CodexAuthService {
+    private static let tokenRefreshURL = URL(string: "https://auth.openai.com/oauth/token")!
+    /// The Codex CLI's own public OAuth client id.
+    private static let oauthClientID = "app_EMoamEEZ73f0CkXaXp7hrann"
+    private static let refreshAge: TimeInterval = 8 * 24 * 60 * 60
+
+    /// Returns a usable access token and account id, refreshing (with auth.json
+    /// write-back) when stale or when `force` is set after a 401.
+    func freshCredentials(force: Bool = false) async throws -> (accessToken: String, accountId: String?) {
+        guard let root = readAuthJSON() else {
+            throw AppError(code: .apiUnauthorized, message: "Codex authentication is unavailable or expired.")
+        }
+        let tokens = root["tokens"] as? [String: Any] ?? [:]
+        let accessToken = Self.string(tokens, "access_token", "accessToken") ?? (root["OPENAI_API_KEY"] as? String)
+        let refreshToken = Self.string(tokens, "refresh_token", "refreshToken")
+        let accountId = Self.string(tokens, "account_id", "accountId") ?? (root["account_id"] as? String)
+
+        let lastRefresh = Self.parseDate(root["last_refresh"])
+        let stale = lastRefresh.map { Date().timeIntervalSince($0) > Self.refreshAge } ?? true
+        guard let refreshToken, force || stale else {
+            guard let accessToken, !accessToken.isEmpty else {
+                throw AppError(code: .apiUnauthorized, message: "Codex authentication is unavailable or expired.")
+            }
+            return (accessToken, accountId)
+        }
+
+        if let running = inflightRefresh { return try await running.value }
+        let task = Task<(accessToken: String, accountId: String?), Error> { @MainActor in
+            defer { self.inflightRefresh = nil }
+            let refreshed = try await self.performRefresh(refreshToken: refreshToken)
+            var updatedTokens = tokens
+            updatedTokens["access_token"] = refreshed["access_token"] as? String ?? accessToken
+            updatedTokens["refresh_token"] = refreshed["refresh_token"] as? String ?? refreshToken
+            if let idToken = refreshed["id_token"] as? String { updatedTokens["id_token"] = idToken }
+            var updatedRoot = root
+            updatedRoot["tokens"] = updatedTokens
+            updatedRoot["last_refresh"] = ISO8601DateFormatter().string(from: Date())
+            do {
+                try self.writeAuthJSON(updatedRoot)
+            } catch {
+                LoggingService.shared.logError("CodexAuthService: refreshed tokens but auth.json write-back failed", error: error)
+            }
+            LoggingService.shared.log("✓ CodexAuthService: refreshed Codex tokens and wrote back to auth.json")
+            return (updatedTokens["access_token"] as? String ?? "", accountId)
+        }
+        inflightRefresh = task
+        return try await task.value
+    }
+
+    private func readAuthJSON() -> [String: Any]? {
+        guard let data = try? Data(contentsOf: authFilePath) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    }
+
+    /// Atomic write-back preserving unknown keys: stage a 0600 temp file, then rename.
+    private func writeAuthJSON(_ json: [String: Any]) throws {
+        let data = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+        let url = authFilePath
+        let staged = url.deletingLastPathComponent()
+            .appendingPathComponent(".auth.json.claude-usage-staged-\(UUID().uuidString)")
+        guard FileManager.default.createFile(atPath: staged.path, contents: data, attributes: [.posixPermissions: 0o600]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        guard rename(staged.path, url.path) == 0 else {
+            let code = errno
+            try? FileManager.default.removeItem(at: staged)
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(code), userInfo: [NSFilePathErrorKey: url.path])
+        }
+    }
+
+    private func performRefresh(refreshToken: String) async throws -> [String: Any] {
+        var request = URLRequest(url: Self.tokenRefreshURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "client_id": Self.oauthClientID,
+            "grant_type": "refresh_token",
+            "refresh_token": refreshToken,
+            "scope": "openid profile email",
+        ])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard status == 200, let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            throw AppError(code: .apiUnauthorized, message: "Codex login expired. Run `codex login` to reconnect.",
+                           technicalDetails: "Token refresh returned HTTP \(status)")
+        }
+        return json
+    }
+
+    private static func string(_ dict: [String: Any], _ snake: String, _ camel: String) -> String? {
+        for key in [snake, camel] {
+            if let value = dict[key] as? String, !value.isEmpty { return value }
+        }
+        return nil
+    }
+
+    private static func parseDate(_ raw: Any?) -> Date? {
+        guard let value = raw as? String, !value.isEmpty else { return nil }
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
     }
 }
 
