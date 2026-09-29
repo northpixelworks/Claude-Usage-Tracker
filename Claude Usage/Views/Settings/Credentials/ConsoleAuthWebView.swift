@@ -146,16 +146,45 @@ struct ConsoleAuthWebView: NSViewRepresentable {
             }
         }
 
-        /// Polls cookies every 1.5s to catch SPA-based logins that don't trigger didFinish.
+        /// Polls cookies every 1s to catch SPA-based logins that don't trigger didFinish.
+        /// WKHTTPCookieStoreObserver doesn't fire for network-set cookies on macOS 26+.
         private func startPollingIfNeeded(webView: WKWebView) {
             guard pollTimer == nil else { return }
-            pollTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
+            // .common mode so the timer keeps firing while the sheet is up.
+            let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
                 guard let self = self, !self.foundCookie, let wv = self.activeWebView else {
                     self?.pollTimer?.invalidate()
                     self?.pollTimer = nil
                     return
                 }
                 self.checkForSessionCookie(in: wv)
+                self.reloadIfLoggedInWithoutCookie(wv)
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            pollTimer = timer
+        }
+
+        // The network process may not expose the fresh sessionKey to
+        // getAllCookies until the next navigation. If the webview has left the
+        // login page but the cookie still isn't visible, force a reload
+        // (mirrors the manual page-reload workaround). Ported from upstream 7b5488c.
+        private var pollsSinceLoginLeft = 0
+        private var reloadAttempts = 0
+
+        private func reloadIfLoggedInWithoutCookie(_ webView: WKWebView) {
+            guard !foundCookie,
+                  let url = webView.url,
+                  url.host?.contains(cookieDomain) == true,
+                  !url.path.contains("login") else {
+                pollsSinceLoginLeft = 0
+                return
+            }
+            pollsSinceLoginLeft += 1
+            // Give the observer/poll 3s to see the cookie, then reload; retry up to 3 times.
+            if pollsSinceLoginLeft >= 3 && reloadAttempts < 3 {
+                pollsSinceLoginLeft = 0
+                reloadAttempts += 1
+                webView.reloadFromOrigin()
             }
         }
 
