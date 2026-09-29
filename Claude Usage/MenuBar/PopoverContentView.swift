@@ -486,10 +486,7 @@ struct SmartUsageDashboard: View {
     }
 
     private var showRemainingPercentage: Bool {
-        if profileManager.displayMode == .multi {
-            return profileManager.multiProfileConfig.showRemainingPercentage
-        }
-        return profileManager.activeProfile?.iconConfig.showRemainingPercentage ?? false
+        profileManager.activeProfile?.iconConfig.showRemainingPercentage ?? false
     }
 
     private var showTimeMarker: Bool {
