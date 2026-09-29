@@ -704,20 +704,32 @@ final class StatusBarUIManager {
         let sessionLimit = 100
         let weeklyLimit = Constants.weeklyLimit
 
+        // Precomputed to keep the ClaudeUsage initializer cheap to type-check.
+        let sessionTokensUsed: Int = Int(Double(sessionLimit) * (sessionPercentage / 100.0))
+        let weeklyTokensUsed: Int = Int(Double(weeklyLimit) * (weekPercentage / 100.0))
+        let sessionResetTime: Date = sessionRow.resetTime ?? Date().addingTimeInterval(Constants.sessionWindow)
+        let weeklyResetTime: Date = weekRow?.resetTime ?? Date().addingTimeInterval(Constants.weeklyWindow)
+
         return ClaudeUsage(
-            sessionTokensUsed: Int(Double(sessionLimit) * (sessionPercentage / 100.0)),
+            sessionTokensUsed: sessionTokensUsed,
             sessionLimit: sessionLimit,
             sessionPercentage: sessionPercentage,
-            sessionResetTime: sessionRow.resetTime ?? Date().addingTimeInterval(Constants.sessionWindow),
-            weeklyTokensUsed: Int(Double(weeklyLimit) * (weekPercentage / 100.0)),
+            sessionResetTime: sessionResetTime,
+            weeklyTokensUsed: weeklyTokensUsed,
             weeklyLimit: weeklyLimit,
             weeklyPercentage: weekPercentage,
-            weeklyResetTime: weekRow?.resetTime ?? Date().addingTimeInterval(Constants.weeklyWindow),
+            weeklyResetTime: weeklyResetTime,
             opusWeeklyTokensUsed: 0,
             opusWeeklyPercentage: 0,
             sonnetWeeklyTokensUsed: 0,
             sonnetWeeklyPercentage: 0,
             sonnetWeeklyResetTime: nil,
+            designWeeklyTokensUsed: 0,
+            designWeeklyPercentage: 0,
+            designWeeklyResetTime: nil,
+            fableWeeklyTokensUsed: 0,
+            fableWeeklyPercentage: 0,
+            fableWeeklyResetTime: nil,
             costUsed: nil,
             costLimit: nil,
             costCurrency: nil,

@@ -42,6 +42,30 @@ enum ClaudeUsageSnapshotAdapter {
             accentStyle: .primary
         ))
 
+        // Claude Design (Weekly) - only if there's usage
+        if usage.designWeeklyTokensUsed > 0 {
+            rows.append(ProviderMetricRow(
+                id: "claude-design-weekly",
+                title: "menubar.design_usage".localized,
+                tag: "menubar.weekly".localized,
+                usedPercentage: usage.designWeeklyPercentage,
+                resetTime: usage.designWeeklyResetTime,
+                accentStyle: .secondary
+            ))
+        }
+
+        // Fable (Weekly) - only if there's usage
+        if usage.fableWeeklyTokensUsed > 0 {
+            rows.append(ProviderMetricRow(
+                id: "claude-fable-weekly",
+                title: "menubar.fable_usage".localized,
+                tag: "menubar.weekly".localized,
+                usedPercentage: usage.fableWeeklyPercentage,
+                resetTime: usage.fableWeeklyResetTime,
+                accentStyle: .secondary
+            ))
+        }
+
         // Opus (Weekly) - only if there's usage
         if usage.opusWeeklyTokensUsed > 0 {
             rows.append(ProviderMetricRow(

@@ -31,6 +31,11 @@ struct UsageSnapshot: Codable, Identifiable, Equatable {
     let timestamp: Date           // When the snapshot was recorded
     let resetType: ResetType      // Type of reset that triggered this snapshot
 
+    /// Provider raw value the snapshot was recorded from (nil = pre-provider
+    /// data, i.e. Anthropic). Stored as a raw string so history written by a
+    /// future app version with more providers still decodes here.
+    let provider: String?
+
     // Claude.ai session usage data (captured before reset)
     let sessionTokensUsed: Int?
     let sessionPercentage: Double?
@@ -42,6 +47,10 @@ struct UsageSnapshot: Codable, Identifiable, Equatable {
     let opusWeeklyPercentage: Double?
     let sonnetWeeklyTokensUsed: Int?
     let sonnetWeeklyPercentage: Double?
+    let designWeeklyTokensUsed: Int?
+    let designWeeklyPercentage: Double?
+    let fableWeeklyTokensUsed: Int?
+    let fableWeeklyPercentage: Double?
 
     // API billing data (captured before reset)
     let apiSpendCents: Int?
@@ -55,6 +64,7 @@ struct UsageSnapshot: Codable, Identifiable, Equatable {
         id: UUID = UUID(),
         timestamp: Date = Date(),
         resetType: ResetType,
+        provider: String? = nil,
         sessionTokensUsed: Int? = nil,
         sessionPercentage: Double? = nil,
         weeklyTokensUsed: Int? = nil,
@@ -63,6 +73,10 @@ struct UsageSnapshot: Codable, Identifiable, Equatable {
         opusWeeklyPercentage: Double? = nil,
         sonnetWeeklyTokensUsed: Int? = nil,
         sonnetWeeklyPercentage: Double? = nil,
+        designWeeklyTokensUsed: Int? = nil,
+        designWeeklyPercentage: Double? = nil,
+        fableWeeklyTokensUsed: Int? = nil,
+        fableWeeklyPercentage: Double? = nil,
         apiSpendCents: Int? = nil,
         apiPrepaidCreditsCents: Int? = nil,
         apiCurrency: String? = nil,
@@ -71,6 +85,7 @@ struct UsageSnapshot: Codable, Identifiable, Equatable {
         self.id = id
         self.timestamp = timestamp
         self.resetType = resetType
+        self.provider = provider
         self.sessionTokensUsed = sessionTokensUsed
         self.sessionPercentage = sessionPercentage
         self.weeklyTokensUsed = weeklyTokensUsed
@@ -79,17 +94,26 @@ struct UsageSnapshot: Codable, Identifiable, Equatable {
         self.opusWeeklyPercentage = opusWeeklyPercentage
         self.sonnetWeeklyTokensUsed = sonnetWeeklyTokensUsed
         self.sonnetWeeklyPercentage = sonnetWeeklyPercentage
+        self.designWeeklyTokensUsed = designWeeklyTokensUsed
+        self.designWeeklyPercentage = designWeeklyPercentage
+        self.fableWeeklyTokensUsed = fableWeeklyTokensUsed
+        self.fableWeeklyPercentage = fableWeeklyPercentage
         self.apiSpendCents = apiSpendCents
         self.apiPrepaidCreditsCents = apiPrepaidCreditsCents
         self.apiCurrency = apiCurrency
         self.triggeringResetTime = triggeringResetTime
     }
 
-    /// Creates a snapshot from ClaudeUsage data (for session reset)
+    /// Creates a snapshot from ClaudeUsage data (for session reset).
+    /// Token counts are omitted for providers that only report percentages,
+    /// so exports show blanks instead of misleading zeros.
+    /// Fork note: provider-specific history lives in ProviderHistory; this path is Claude-only.
     static func fromSessionReset(_ usage: ClaudeUsage, resetTime: Date) -> UsageSnapshot {
-        UsageSnapshot(
+        let hasTokens = true
+        return UsageSnapshot(
             resetType: .sessionReset,
-            sessionTokensUsed: usage.sessionTokensUsed,
+            provider: "anthropic",
+            sessionTokensUsed: hasTokens ? usage.sessionTokensUsed : nil,
             sessionPercentage: usage.sessionPercentage,
             triggeringResetTime: resetTime
         )
@@ -97,14 +121,21 @@ struct UsageSnapshot: Codable, Identifiable, Equatable {
 
     /// Creates a snapshot from ClaudeUsage data (for weekly reset)
     static func fromWeeklyReset(_ usage: ClaudeUsage, resetTime: Date) -> UsageSnapshot {
-        UsageSnapshot(
+        let hasTokens = true
+        let hasModels = true
+        return UsageSnapshot(
             resetType: .weeklyReset,
-            weeklyTokensUsed: usage.weeklyTokensUsed,
+            provider: "anthropic",
+            weeklyTokensUsed: hasTokens ? usage.weeklyTokensUsed : nil,
             weeklyPercentage: usage.weeklyPercentage,
-            opusWeeklyTokensUsed: usage.opusWeeklyTokensUsed,
-            opusWeeklyPercentage: usage.opusWeeklyPercentage,
-            sonnetWeeklyTokensUsed: usage.sonnetWeeklyTokensUsed,
-            sonnetWeeklyPercentage: usage.sonnetWeeklyPercentage,
+            opusWeeklyTokensUsed: hasModels ? usage.opusWeeklyTokensUsed : nil,
+            opusWeeklyPercentage: hasModels ? usage.opusWeeklyPercentage : nil,
+            sonnetWeeklyTokensUsed: hasModels ? usage.sonnetWeeklyTokensUsed : nil,
+            sonnetWeeklyPercentage: hasModels ? usage.sonnetWeeklyPercentage : nil,
+            designWeeklyTokensUsed: hasModels ? usage.designWeeklyTokensUsed : nil,
+            designWeeklyPercentage: hasModels ? usage.designWeeklyPercentage : nil,
+            fableWeeklyTokensUsed: hasModels ? usage.fableWeeklyTokensUsed : nil,
+            fableWeeklyPercentage: hasModels ? usage.fableWeeklyPercentage : nil,
             triggeringResetTime: resetTime
         )
     }
@@ -223,7 +254,7 @@ struct UsageHistoryData: Codable, Equatable {
 
     /// Export to CSV format
     func exportToCSV() -> String {
-        var csv = "Timestamp,Reset Type,Session %,Session Tokens,Weekly %,Weekly Tokens,Opus %,Sonnet %,API Spend,Currency\n"
+        var csv = "Timestamp,Reset Type,Session %,Session Tokens,Weekly %,Weekly Tokens,Opus %,Sonnet %,Design %,Fable %,API Spend,Currency\n"
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -240,11 +271,13 @@ struct UsageHistoryData: Codable, Equatable {
 
             let opusPct = snapshot.opusWeeklyPercentage.map { String(format: "%.1f", $0) } ?? ""
             let sonnetPct = snapshot.sonnetWeeklyPercentage.map { String(format: "%.1f", $0) } ?? ""
+            let designPct = snapshot.designWeeklyPercentage.map { String(format: "%.1f", $0) } ?? ""
+            let fablePct = snapshot.fableWeeklyPercentage.map { String(format: "%.1f", $0) } ?? ""
 
             let apiSpend = snapshot.apiSpendCents.map { String(Double($0) / 100.0) } ?? ""
             let currency = snapshot.apiCurrency ?? ""
 
-            csv += "\(timestamp),\(resetType),\(sessionPct),\(sessionTokens),\(weeklyPct),\(weeklyTokens),\(opusPct),\(sonnetPct),\(apiSpend),\(currency)\n"
+            csv += "\(timestamp),\(resetType),\(sessionPct),\(sessionTokens),\(weeklyPct),\(weeklyTokens),\(opusPct),\(sonnetPct),\(designPct),\(fablePct),\(apiSpend),\(currency)\n"
         }
 
         return csv
