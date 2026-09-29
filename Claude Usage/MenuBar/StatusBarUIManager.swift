@@ -74,6 +74,8 @@ final class StatusBarUIManager {
             // No credentials/metrics - show default app logo
             let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
             statusItem.autosaveName = Self.defaultLogoAutosaveName
+            // Override any persisted false from a prior cmd-drag.
+            statusItem.isVisible = true
 
             if let button = statusItem.button {
                 button.action = action
@@ -92,6 +94,8 @@ final class StatusBarUIManager {
             for metricConfig in config.enabledMetrics {
                 let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
                 statusItem.autosaveName = Self.autosaveName(for: metricConfig.metricType)
+                // Override any persisted false from a prior cmd-drag.
+                statusItem.isVisible = true
 
                 if let button = statusItem.button {
                     button.action = action
@@ -144,6 +148,8 @@ final class StatusBarUIManager {
             statusItem.autosaveName = config.enabledMetrics.isEmpty
                 ? Self.defaultLogoAutosaveName
                 : Self.autosaveName(for: metricType)
+            // Override any persisted false from a prior cmd-drag.
+            statusItem.isVisible = true
 
             if let button = statusItem.button {
                 button.action = action
@@ -199,6 +205,12 @@ final class StatusBarUIManager {
 
     // MARK: - Multi-Profile Mode
 
+    /// Fixed placeholder length for freshly-created multi-profile status items. Creating
+    /// them at a concrete length (rather than .variableLength) avoids the macOS 26 (Tahoe)
+    /// recursive variable-width NSISEngine solve during a multi-item rebuild (profile
+    /// switch). setMultiProfileImage replaces it with the real coarse-rounded width.
+    private static let multiProfilePlaceholderLength: CGFloat = 32
+
     /// Sets up status bar for multi-profile display mode
     func setupMultiProfile(profiles: [Profile], config: MultiProfileDisplayConfig, target: AnyObject, action: Selector) {
         // Clean up existing items
@@ -213,6 +225,8 @@ final class StatusBarUIManager {
             // No profiles selected - show default logo
             let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
             statusItem.autosaveName = Self.defaultLogoAutosaveName
+            // Override any persisted false from a prior cmd-drag.
+            statusItem.isVisible = true
             if let button = statusItem.button {
                 button.action = action
                 button.target = target
@@ -225,8 +239,10 @@ final class StatusBarUIManager {
         } else {
             // Create one status item per selected profile
             for item in selectedItems {
-                let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+                let statusItem = NSStatusBar.system.statusItem(withLength: Self.multiProfilePlaceholderLength)
                 statusItem.autosaveName = Self.autosaveName(for: item)
+                // Override any persisted false from a prior cmd-drag.
+                statusItem.isVisible = true
 
                 if let button = statusItem.button {
                     button.action = action
@@ -274,6 +290,8 @@ final class StatusBarUIManager {
         if selectedItems.isEmpty, itemsToAdd.contains(Self.defaultLogoPlaceholderKey) {
             let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
             statusItem.autosaveName = Self.defaultLogoAutosaveName
+            // Override any persisted false from a prior cmd-drag.
+            statusItem.isVisible = true
 
             if let button = statusItem.button {
                 button.action = action
@@ -285,8 +303,10 @@ final class StatusBarUIManager {
             LoggingService.shared.logUIEvent("Multi-profile: Added default logo")
         } else {
             for itemKey in selectedItems where itemsToAdd.contains(itemKey) {
-                let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+                let statusItem = NSStatusBar.system.statusItem(withLength: Self.multiProfilePlaceholderLength)
                 statusItem.autosaveName = Self.autosaveName(for: itemKey)
+                // Override any persisted false from a prior cmd-drag.
+                statusItem.isVisible = true
 
                 if let button = statusItem.button {
                     button.action = action
@@ -316,7 +336,7 @@ final class StatusBarUIManager {
                 let menuBarIsDark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
                 let logoImage = renderer.createDefaultAppLogo(isDarkMode: menuBarIsDark)
                 logoImage.isTemplate = true
-                setButtonImage(button, image: logoImage)
+                setMultiProfileImage(statusItem, button: button, image: logoImage)
                 button.toolTip = "Claude Usage"
             }
             return
@@ -350,7 +370,7 @@ final class StatusBarUIManager {
                     let menuBarIsDark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
                     let logoImage = renderer.createDefaultAppLogo(isDarkMode: menuBarIsDark)
                     logoImage.isTemplate = true
-                    setButtonImage(button, image: logoImage)
+                    setMultiProfileImage(statusItem, button: button, image: logoImage)
                     button.toolTip = profile.name
                 }
             }
@@ -381,7 +401,7 @@ final class StatusBarUIManager {
             )
 
             image.isTemplate = profileConfig.colorMode == .monochrome && !profileConfig.showPaceMarker
-            setButtonImage(button, image: image)
+            setMultiProfileImage(statusItem, button: button, image: image)
 
             let metricName = profile.providerKind == .copilot
                 ? "Monthly Premium Usage"
@@ -406,7 +426,7 @@ final class StatusBarUIManager {
               let renderState = multiProfileRenderState(for: profile, snapshot: snapshot, config: config) else {
             let logoImage = renderer.createDefaultAppLogo(isDarkMode: menuBarIsDark)
             logoImage.isTemplate = true
-            setButtonImage(button, image: logoImage)
+            setMultiProfileImage(statusItem, button: button, image: logoImage)
             button.toolTip = profile.name
             return
         }
@@ -429,7 +449,7 @@ final class StatusBarUIManager {
         )
 
         image.isTemplate = false
-        setButtonImage(button, image: image)
+        setMultiProfileImage(statusItem, button: button, image: image)
         button.toolTip = tooltip(
             for: profile,
             primaryRow: renderState.primaryRow,
@@ -1082,6 +1102,18 @@ final class StatusBarUIManager {
         if lastImageData[buttonId] == newData { return }
         lastImageData[buttonId] = newData
         button.image = image
+    }
+
+    /// Multi-profile image setter. macOS 26 (Tahoe) crash fix: with .variableLength,
+    /// AppKit recomputes each item's width inside a shared NSISEngine layout pass, which
+    /// recurses and overflows the stack with 2+ items. Pin an explicit length, rounded to
+    /// a coarse grid so ordinary value changes ("5%" vs "45%") never move it.
+    private func setMultiProfileImage(_ statusItem: NSStatusItem, button: NSStatusBarButton, image: NSImage) {
+        let stableLength = ceil(image.size.width / 32.0) * 32.0
+        if abs(statusItem.length - stableLength) > 0.5 {
+            statusItem.length = stableLength
+        }
+        setButtonImage(button, image: image)
     }
 
     /// Debounces appearance change notifications so multiple displays/buttons

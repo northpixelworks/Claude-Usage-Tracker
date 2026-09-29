@@ -649,7 +649,7 @@ class MenuBarManager: NSObject, ObservableObject {
                     popover.close()
                     stopMonitoringForOutsideClicks()
                     popover.contentSize = preferredPopoverSize()
-                    popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+                    showPopover(popover, from: button)
                     currentPopoverButton = button
                     startMonitoringForOutsideClicks()
                     refreshPopoverUsage()
@@ -668,11 +668,24 @@ class MenuBarManager: NSObject, ObservableObject {
                 // Update content view controller for current profile data
                 popover.contentViewController = createContentViewController()
                 popover.contentSize = preferredPopoverSize()
-                popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+                showPopover(popover, from: button)
                 currentPopoverButton = button
                 startMonitoringForOutsideClicks()
                 refreshPopoverUsage()
             }
+        }
+    }
+
+    /// Shows `popover` anchored to a status bar button and gives its backing window
+    /// the Space placement a menu bar popover needs to appear over a full-screen app.
+    private func showPopover(_ popover: NSPopover, from button: NSStatusBarButton) {
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        if let window = popover.contentViewController?.view.window {
+            window.enableDisplayOnFullScreenSpaces()
+            // AppKit hands initial key focus to the first focusable control in
+            // the popover, drawing a focus ring. Nothing in the popover needs
+            // initial keyboard focus, so drop first responder to the window itself.
+            window.makeFirstResponder(nil)
         }
     }
 
@@ -1805,6 +1818,8 @@ extension MenuBarManager: NSPopoverDelegate {
         window.setContentSize(Constants.WindowSizes.popoverSize)
         window.isReleasedWhenClosed = false
         window.level = .floating
+        // Allow a torn-off popover to stay on a full-screen app's Space.
+        window.collectionBehavior.insert(.fullScreenAuxiliary)
         window.isRestorable = false
         window.delegate = self
         window.backgroundColor = .clear
