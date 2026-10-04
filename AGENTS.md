@@ -3,19 +3,45 @@
 <!-- BEGIN:cross-agent-agent-rules -->
 ## Cross-Agent Compatibility
 
-This repository is prepared for both Codex and Claude Code. Keep durable project instructions here in `AGENTS.md`; Claude loads `CLAUDE.md`, which should import this file with `@AGENTS.md`.
+This repository is used by multiple coding agents. `AGENTS.md` is the single instruction file; keep durable project instructions here.
 
 ### Start Here
 - [README.md](README.md) — README.
-- [ARCHITECTURE.md](ARCHITECTURE.md) — architecture.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — required reading: full app structure, data flow, modules, and gotchas.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contributing guide.
 - [SECURITY.md](SECURITY.md) — security policy.
 - [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) — agent guide.
 
-### Legacy Guidance
-- Read `CLAUDE.md` in this directory for project guidance that has not been migrated yet.
-- Translate Claude-specific tool, memory, slash-command, or subagent wording to Codex equivalents.
-- Do not edit `CLAUDE.md` unless the user explicitly asks to migrate or update Claude guidance.
+### Stack
+| | |
+|---|---|
+| Language | Swift 5.x |
+| UI | SwiftUI + AppKit |
+| Build | Xcode (`Claude Usage.xcodeproj`) |
+| Tests | XCTest (`Claude UsageTests/`) |
+| CI | GitHub Actions (`.github/workflows/`) |
+
+### Build / Dev / Test
+```bash
+# Build & run
+open "Claude Usage.xcodeproj"   # then Cmd+B / Cmd+R in Xcode
+
+# CLI build (release)
+./scripts/build-and-install.sh
+
+# Validate localizations
+./scripts/validate_localizations.sh
+
+# Tests
+# Run via Xcode (Cmd+U) or: xcodebuild test -scheme "Claude Usage" -destination 'platform=macOS'
+```
+
+### Critical Gotchas
+- **Reinstall:** always `rm -rf` old `.app` before `cp -R` — stale binary causes crashes.
+- **Keychain truncation:** CLI credentials >2 KB may be truncated; app falls back to `~/.claude/.credentials.json`.
+- **Headless / Remote Desktop:** status bar init may fail; `AppDelegate` auto-retries after 3 s.
+- **`statusLevel` deprecated:** use `UsageStatusCalculator.calculateStatus()`, not `ClaudeUsage.statusLevel`.
+- **Fork tracking:** all deviations from upstream documented in `docs-internal/CUSTOM-CHANGES.md`.
 
 ### Common Commands
 - Xcode project: inspect schemes with `xcodebuild -list -project Claude Usage.xcodeproj` before building.
