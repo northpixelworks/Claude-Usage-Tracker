@@ -5,6 +5,10 @@ This file helps track what we've changed so upstream merges stay manageable.
 
 ---
 
+## API menu bar data — 2026-09-24
+
+Multi-profile API indicators now receive billing data from their own provider snapshot instead of an unconditional nil value. Available API balances display normally; genuinely missing data remains N/A. API tooltips include the remaining balance. Regression coverage checks populated, missing, and isolated per-profile billing data.
+
 ## Audit fixes — 2026-09-06
 
 Supersedes the peak-hour behavior described in historical entries below.

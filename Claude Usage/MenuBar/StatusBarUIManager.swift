@@ -396,7 +396,7 @@ final class StatusBarUIManager {
                 config: metricConfig,
                 globalConfig: profileConfig,
                 usage: syntheticUsage,
-                apiUsage: nil,
+                apiUsage: snapshot.apiUsage,
                 isDarkMode: menuBarIsDark,
                 colorMode: profileConfig.colorMode,
                 singleColorHex: profileConfig.singleColorHex,
@@ -413,7 +413,11 @@ final class StatusBarUIManager {
             let metricName = profile.providerKind == .copilot
                 ? "Monthly Premium Usage"
                 : metricConfig.metricType.displayName
-            button.toolTip = "\(profile.name) • \(metricName)"
+            if metricConfig.metricType == .api, let apiUsage = snapshot.apiUsage {
+                button.toolTip = "\(profile.name) • \(metricName) • \(apiUsage.formattedRemaining) remaining"
+            } else {
+                button.toolTip = "\(profile.name) • \(metricName)"
+            }
         }
     }
 
@@ -981,7 +985,7 @@ final class StatusBarUIManager {
                 config: metricConfig,
                 globalConfig: config,
                 usage: syntheticUsage,
-                apiUsage: nil,
+                apiUsage: snapshot.apiUsage,
                 isDarkMode: menuBarIsDark,
                 colorMode: config.colorMode,
                 singleColorHex: config.singleColorHex,

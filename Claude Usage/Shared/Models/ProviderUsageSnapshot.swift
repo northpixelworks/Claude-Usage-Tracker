@@ -113,6 +113,14 @@ struct ProviderUsageSnapshot: Equatable {
         self.fetchedAt = fetchedAt
     }
 
+    /// Billing data belongs to this snapshot's profile, never the active profile's cache.
+    var apiUsage: APIUsage? {
+        for card in secondaryCards {
+            if case .apiUsage(let usage) = card.kind { return usage }
+        }
+        return nil
+    }
+
     /// Empty snapshot for initial/loading state
     static func empty(for provider: UsageProviderKind) -> ProviderUsageSnapshot {
         ProviderUsageSnapshot(

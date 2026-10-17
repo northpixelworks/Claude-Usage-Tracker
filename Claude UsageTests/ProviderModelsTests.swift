@@ -280,6 +280,18 @@ final class ProviderModelsTests: XCTestCase {
         let snapshot = ClaudeUsageSnapshotAdapter.snapshot(from: usage, apiUsage: nil)
 
         XCTAssertTrue(snapshot.secondaryCards.isEmpty)
+        XCTAssertNil(snapshot.apiUsage)
+    }
+
+    func testSnapshotAPIUsageStaysWithItsProfile() {
+        let usage = makeClaudeUsage(sessionPercentage: 20, weeklyPercentage: 10)
+        let firstAPI = makeAPIUsage(currentSpendCents: 500, prepaidCreditsCents: 10000)
+        let secondAPI = makeAPIUsage(currentSpendCents: 2500, prepaidCreditsCents: 30000)
+        let first = ClaudeUsageSnapshotAdapter.snapshot(from: usage, apiUsage: firstAPI)
+        let second = ClaudeUsageSnapshotAdapter.snapshot(from: usage, apiUsage: secondAPI)
+        XCTAssertEqual(first.apiUsage, firstAPI)
+        XCTAssertEqual(second.apiUsage, secondAPI)
+        XCTAssertNil(ProviderUsageSnapshot.empty(for: .codex).apiUsage)
     }
 
     func testAdapterWithApiUsageCreatesCard() {
@@ -290,6 +302,7 @@ final class ProviderModelsTests: XCTestCase {
 
         let apiCard = snapshot.secondaryCards.first { $0.id == "claude-api-usage" }
         XCTAssertNotNil(apiCard)
+        XCTAssertEqual(snapshot.apiUsage, apiUsage)
     }
 
     func testAdapterWithApiCostCreatesAdditionalCard() {
