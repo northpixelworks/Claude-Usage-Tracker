@@ -231,6 +231,27 @@ final class ProviderModelsTests: XCTestCase {
 
     // MARK: - ClaudeUsageSnapshotAdapter Tests
 
+    func testAdapterMarksWeeklyRowUnavailable() {
+        var usage = ClaudeUsage.empty
+        usage.weeklyDataUnavailable = true
+        let snapshot = ClaudeUsageSnapshotAdapter.snapshot(from: usage, apiUsage: nil)
+        let weekly = snapshot.primaryRows.first { $0.id == "claude-weekly" }
+        XCTAssertEqual(weekly?.isUnavailable, true)
+        XCTAssertEqual(weekly?.supportsPaceMarkers, false)
+        XCTAssertNotNil(weekly?.subtitle)
+        XCTAssertEqual(snapshot.primaryRows.first { $0.id == "claude-session" }?.isUnavailable, false)
+    }
+
+    func testWeeklyDataUnavailableDecodesFromOldDataAsFalse() throws {
+        var usage = ClaudeUsage.empty
+        usage.weeklyDataUnavailable = true
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(usage)) as! [String: Any]
+        XCTAssertEqual(try JSONDecoder().decode(ClaudeUsage.self, from: JSONSerialization.data(withJSONObject: json)).weeklyDataUnavailable, true)
+        json.removeValue(forKey: "weeklyDataUnavailable")
+        XCTAssertEqual(try JSONDecoder().decode(ClaudeUsage.self, from: JSONSerialization.data(withJSONObject: json)).weeklyDataUnavailable, false)
+    }
+
+
     func testAdapterCreatesClaudeSnapshot() {
         let usage = makeClaudeUsage(sessionPercentage: 50.0, weeklyPercentage: 30.0)
 

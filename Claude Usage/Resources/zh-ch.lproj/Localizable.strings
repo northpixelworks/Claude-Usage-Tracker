@@ -66,6 +66,7 @@
 "menubar.5_hour_window" = "5小时滚动窗口";
 "menubar.all_models" = "所有模型";
 "menubar.weekly" = "每周";
+"menubar.no_data_from_anthropic" = "Anthropic 未提供数据";
 "menubar.anthropic_console" = "Anthropic API 控制台";
 "menubar.used" = "已使用";
 "menubar.remaining" = "剩余";

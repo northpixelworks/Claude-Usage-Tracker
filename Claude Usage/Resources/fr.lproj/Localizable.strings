@@ -66,6 +66,7 @@
 "menubar.5_hour_window" = "Fenêtre glissante de 5 heures";
 "menubar.all_models" = "Tous les modèles";
 "menubar.weekly" = "Hebdomadaire";
+"menubar.no_data_from_anthropic" = "Aucune donnée d'Anthropic";
 "menubar.anthropic_console" = "Console API Anthropic";
 "menubar.used" = "Utilisé";
 "menubar.remaining" = "Restant";

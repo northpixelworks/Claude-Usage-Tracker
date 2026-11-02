@@ -896,6 +896,18 @@ class ClaudeAPIService: APIServiceProtocol {
             //  "scope":{"model":{"id":null,"display_name":"Fable"}}}
             // limits[] is therefore the source of truth: when an entry is
             // present it overrides whatever the legacy fields said.
+            // Since ~Nov 2026 the API can mark the weekly limit inactive
+            // ({"kind":"weekly_all","is_active":false}) and report seven_day
+            // as a flat 0 while real usage is metered elsewhere. Flag it so the
+            // UI says "no data" rather than showing a confidently empty bar.
+            var weeklyDataUnavailable = false
+            if weeklyPercentage == 0, let limits = json["limits"] as? [[String: Any]] {
+                weeklyDataUnavailable = limits.contains { limit in
+                    limit["kind"] as? String == "weekly_all"
+                        && (limit["is_active"] as? Bool) == false
+                }
+            }
+
             if let limits = json["limits"] as? [[String: Any]] {
                 for limit in limits {
                     guard limit["kind"] as? String == "weekly_scoped",
@@ -964,7 +976,8 @@ class ClaudeAPIService: APIServiceProtocol {
                 costLimit: nil,
                 costCurrency: nil,
                 lastUpdated: Date(),
-                userTimezone: .current
+                userTimezone: .current,
+                weeklyDataUnavailable: weeklyDataUnavailable
             )
 
             return usage

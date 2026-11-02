@@ -74,6 +74,7 @@
 "menubar.5_hour_window" = "Ковзне вікно 5 годин";
 "menubar.all_models" = "Всі моделі";
 "menubar.weekly" = "Тижневе";
+"menubar.no_data_from_anthropic" = "Немає даних від Anthropic";
 "menubar.anthropic_console" = "Anthropic API Console";
 "menubar.used" = "Використано";
 "menubar.remaining" = "Залишилось";

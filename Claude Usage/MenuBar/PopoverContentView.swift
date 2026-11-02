@@ -529,7 +529,8 @@ struct SmartUsageDashboard: View {
                     showTimeMarker: row.supportsPaceMarkers ? showTimeMarker : false,
                     showPaceMarker: row.supportsPaceMarkers ? showPaceMarker : false,
                     usePaceColoring: row.supportsPaceMarkers ? usePaceColoring : false,
-                    timeDisplay: timeDisplay
+                    timeDisplay: timeDisplay,
+                    isUnavailable: row.isUnavailable
                 )
             }
 
@@ -611,6 +612,8 @@ struct UsageRow: View {
     var showPaceMarker: Bool = true
     var usePaceColoring: Bool = true
     var timeDisplay: PopoverTimeDisplay = .resetTime
+    /// Provider sent no usable figure: show "–" in grey instead of a fake 0%.
+    var isUnavailable: Bool = false
 
     private var displayPercentage: Double {
         UsageStatusCalculator.getDisplayPercentage(
@@ -736,9 +739,9 @@ struct UsageRow: View {
 
                 Spacer()
 
-                Text("\(Int(displayPercentage))%")
+                Text(isUnavailable ? "–" : "\(Int(displayPercentage))%")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundColor(statusColor)
+                    .foregroundColor(isUnavailable ? .secondary : statusColor)
             }
 
             // Progress bar

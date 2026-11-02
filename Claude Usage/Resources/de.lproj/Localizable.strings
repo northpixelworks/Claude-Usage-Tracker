@@ -66,6 +66,7 @@
 "menubar.5_hour_window" = "5-Stunden-Gleitfenster";
 "menubar.all_models" = "Alle Modelle";
 "menubar.weekly" = "Wöchentlich";
+"menubar.no_data_from_anthropic" = "Keine Daten von Anthropic";
 "menubar.anthropic_console" = "Anthropic API-Konsole";
 "menubar.used" = "Verbraucht";
 "menubar.remaining" = "Verbleibend";

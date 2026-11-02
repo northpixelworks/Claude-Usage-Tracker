@@ -490,3 +490,11 @@ Same strategy as §17: upstream built parallel versions of the fork's provider s
 ## 2026-09-29 test stability
 
 - `NotchHookServerTests`: tearDown waits for `.stopped` (up to 2 s), setUp waits for `.running` (up to 8 s, covers the 1s/2s/4s port-retry backoff) via shared `waitForServerStatus`. Fixes ~1-in-3 flaky -1004 connection-refused failures caused by stale `serverStatus` between tests. Test-only; no app code changed.
+
+## 2026-11-02 weekly "no data from Anthropic" state
+
+- Anthropic's `/api/oauth/usage` now returns `seven_day.utilization = 0` with `limits[{kind:"weekly_all", is_active:false}]` while real usage is metered elsewhere (dollar bucket `iguana_necktie`). The app showed this as an empty 0% weekly battery.
+- `ClaudeAPIService.parseUsageResponse` sets the new `ClaudeUsage.weeklyDataUnavailable` when weekly is 0 and `weekly_all` is inactive (tolerant decode, defaults false).
+- `ClaudeUsageSnapshotAdapter` marks the weekly row `isUnavailable` (new `ProviderMetricRow` field), adds the subtitle `menubar.no_data_from_anthropic` (13 languages) and disables pace markers.
+- Menu bar battery: dashed outline with "n/a" inside, no fill/markers; tooltips say "No data from Anthropic". Popover row shows "–" in grey.
+- Reverts itself automatically once Anthropic marks the weekly limit active again. Tests: `ProviderModelsTests` (adapter flag, old-data decode).

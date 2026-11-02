@@ -74,6 +74,7 @@
 "menubar.5_hour_window" = "Chu kỳ xoay vòng 5 giờ";
 "menubar.all_models" = "Tất cả mô hình";
 "menubar.weekly" = "Hàng tuần";
+"menubar.no_data_from_anthropic" = "Không có dữ liệu từ Anthropic";
 "menubar.anthropic_console" = "Anthropic API Console";
 "menubar.used" = "Đã dùng";
 "menubar.remaining" = "Còn lại";

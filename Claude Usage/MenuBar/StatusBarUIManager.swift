@@ -415,6 +415,8 @@ final class StatusBarUIManager {
                 : metricConfig.metricType.displayName
             if metricConfig.metricType == .api, let apiUsage = snapshot.apiUsage {
                 button.toolTip = "\(profile.name) • \(metricName) • \(apiUsage.formattedRemaining) remaining"
+            } else if metricConfig.metricType == .week && syntheticUsage.weeklyDataUnavailable {
+                button.toolTip = "\(profile.name) • \(metricName) • \("menubar.no_data_from_anthropic".localized)"
             } else {
                 button.toolTip = "\(profile.name) • \(metricName)"
             }
@@ -747,7 +749,8 @@ final class StatusBarUIManager {
             overageBalance: nil,
             overageBalanceCurrency: nil,
             lastUpdated: snapshot.fetchedAt,
-            userTimezone: .current
+            userTimezone: .current,
+            weeklyDataUnavailable: weekRow?.isUnavailable ?? false
         )
     }
 
@@ -924,7 +927,9 @@ final class StatusBarUIManager {
             case .week: pct = Int(usage.weeklyPercentage)
             case .api: pct = Int(apiUsage?.usagePercentage ?? 0)
             }
-            button.toolTip = "\(metricName): \(pct)%"
+            button.toolTip = metricConfig.metricType == .week && usage.weeklyDataUnavailable
+                ? "\(metricName): \("menubar.no_data_from_anthropic".localized)"
+                : "\(metricName): \(pct)%"
         }
     }
 
@@ -1048,7 +1053,9 @@ final class StatusBarUIManager {
         case .week: pct = Int(usage.weeklyPercentage)
         case .api: pct = Int(apiUsage?.usagePercentage ?? 0)
         }
-        button.toolTip = "\(metricName): \(pct)%"
+        button.toolTip = metricType == .week && usage.weeklyDataUnavailable
+            ? "\(metricName): \("menubar.no_data_from_anthropic".localized)"
+            : "\(metricName): \(pct)%"
     }
 
     /// Get button for a specific metric (used for popover positioning)

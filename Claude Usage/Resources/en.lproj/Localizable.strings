@@ -72,6 +72,7 @@
 "menubar.5_hour_window" = "5-hour rolling window";
 "menubar.all_models" = "All models";
 "menubar.weekly" = "Weekly";
+"menubar.no_data_from_anthropic" = "No data from Anthropic";
 "menubar.anthropic_console" = "Anthropic API Console";
 "menubar.used" = "Used";
 "menubar.remaining" = "Remaining";

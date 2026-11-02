@@ -40,8 +40,11 @@ final class MenuBarIconRenderer {
             periodDuration: periodDuration
         )
 
+        // Anthropic sent no usable weekly figure: no fill, no markers.
+        let dataUnavailable = metricType == .week && usage.weeklyDataUnavailable
+
         // Calculate time marker fraction for session/week metrics
-        let timeMarkerFraction: CGFloat? = globalConfig.showTimeMarker
+        let timeMarkerFraction: CGFloat? = globalConfig.showTimeMarker && !dataUnavailable
             ? calculateTimeMarkerFraction(
                 metricType: metricType,
                 usage: usage,
@@ -52,7 +55,7 @@ final class MenuBarIconRenderer {
 
         // Compute pace status from RAW values (not display-adjusted)
         let paceStatus: PaceStatus? = {
-            guard globalConfig.showPaceMarker, metricType != .api else { return nil }
+            guard globalConfig.showPaceMarker, metricType != .api, !dataUnavailable else { return nil }
             // Get raw elapsed fraction (always non-inverted)
             guard let rawElapsed = calculateTimeMarkerFraction(
                 metricType: metricType, usage: usage, showRemaining: false,
@@ -97,7 +100,8 @@ final class MenuBarIconRenderer {
                 paceStatus: paceStatus,
                 showPaceMarker: showPaceMarker,
                 profilePrefix: profilePrefix,
-                periodLabel: periodLabel
+                periodLabel: periodLabel,
+                dataUnavailable: dataUnavailable
             )
         case .progressBar:
             return createProgressBarStyle(
@@ -287,9 +291,10 @@ final class MenuBarIconRenderer {
         paceStatus: PaceStatus? = nil,
         showPaceMarker: Bool = false,
         profilePrefix: String? = nil,
-        periodLabel: String? = nil
+        periodLabel: String? = nil,
+        dataUnavailable: Bool = false
     ) -> NSImage {
-        let percentage = CGFloat(metricData.percentage) / 100.0
+        let percentage = dataUnavailable ? 0 : CGFloat(metricData.percentage) / 100.0
 
         // Battery style: NO prefix before the bar, label goes below
         let batteryWidth: CGFloat = 42  // Match original exactly
@@ -323,9 +328,28 @@ final class MenuBarIconRenderer {
             yRadius: 2.5
         )
 
-        outlineColor.withAlphaComponent(0.5).setStroke()
+        outlineColor.withAlphaComponent(dataUnavailable ? 0.35 : 0.5).setStroke()
         containerPath.lineWidth = 1.2
+        if dataUnavailable {
+            containerPath.setLineDash([2, 1.5], count: 2, phase: 0)
+        }
         containerPath.stroke()
+
+        // No data from the provider: say so inside the bar instead of
+        // showing an empty (= "0% used") battery.
+        if dataUnavailable {
+            let naAttributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 7.5, weight: .semibold),
+                .foregroundColor: foregroundColor.withAlphaComponent(0.7)
+            ]
+            let na = "n/a" as NSString
+            let naSize = na.size(withAttributes: naAttributes)
+            na.draw(
+                at: NSPoint(x: xOffset + 1 + (barWidth - naSize.width) / 2,
+                            y: barY + (barHeight - naSize.height) / 2),
+                withAttributes: naAttributes
+            )
+        }
 
         // Fill level
         let fillWidth = (barWidth - padding * 2) * percentage
@@ -381,7 +405,7 @@ final class MenuBarIconRenderer {
             }
         } else {
             // No label mode - show percentage instead
-            text = "\(Int(metricData.percentage))%" as NSString
+            text = (dataUnavailable ? "n/a" : "\(Int(metricData.percentage))%") as NSString
         }
 
         let textSize = text.size(withAttributes: textAttributes)

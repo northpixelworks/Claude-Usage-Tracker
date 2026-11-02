@@ -56,6 +56,11 @@ struct ClaudeUsage: Codable, Equatable {
     var lastUpdated: Date
     var userTimezone: TimeZone
 
+    /// True when Anthropic reports no usable weekly figure (e.g. the weekly
+    /// limit is marked `is_active: false` and `seven_day` is a flat 0).
+    /// The UI then shows "no data" instead of a misleading empty bar.
+    var weeklyDataUnavailable: Bool = false
+
     /// Remaining percentage (100 - used percentage)
     var remainingPercentage: Double {
         max(0, 100 - effectiveSessionPercentage)
@@ -143,6 +148,7 @@ extension ClaudeUsage {
         case overageBalance, overageBalanceCurrency
         case planType, creditsBalance, creditsUnlimited
         case lastUpdated, userTimezone
+        case weeklyDataUnavailable
     }
 
     init(from decoder: Decoder) throws {
@@ -176,7 +182,8 @@ extension ClaudeUsage {
             creditsBalance: try c.decodeIfPresent(Double.self, forKey: .creditsBalance),
             creditsUnlimited: try c.decodeIfPresent(Bool.self, forKey: .creditsUnlimited),
             lastUpdated: try c.decodeIfPresent(Date.self, forKey: .lastUpdated) ?? Date(),
-            userTimezone: try c.decodeIfPresent(TimeZone.self, forKey: .userTimezone) ?? .current
+            userTimezone: try c.decodeIfPresent(TimeZone.self, forKey: .userTimezone) ?? .current,
+            weeklyDataUnavailable: try c.decodeIfPresent(Bool.self, forKey: .weeklyDataUnavailable) ?? false
         )
     }
 }

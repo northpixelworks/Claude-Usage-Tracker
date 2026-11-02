@@ -69,6 +69,7 @@
 "menubar.5_hour_window" = "5 小時滑動視窗";
 "menubar.all_models" = "所有模型";
 "menubar.weekly" = "每週";
+"menubar.no_data_from_anthropic" = "Anthropic 未提供資料";
 "menubar.anthropic_console" = "Anthropic API Console";
 "menubar.api_cost" = "API 費用";
 "menubar.cost_source.api" = "API";

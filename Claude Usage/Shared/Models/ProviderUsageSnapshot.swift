@@ -33,6 +33,8 @@ struct ProviderMetricRow: Identifiable, Equatable {
     let periodDuration: TimeInterval?
     let supportsPaceMarkers: Bool
     let accentStyle: MetricAccentStyle
+    /// The provider sent no usable figure for this metric; UI shows "no data".
+    let isUnavailable: Bool
 
     init(
         id: String,
@@ -44,7 +46,8 @@ struct ProviderMetricRow: Identifiable, Equatable {
         resetTime: Date? = nil,
         periodDuration: TimeInterval? = nil,
         supportsPaceMarkers: Bool = false,
-        accentStyle: MetricAccentStyle = .primary
+        accentStyle: MetricAccentStyle = .primary,
+        isUnavailable: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -56,6 +59,7 @@ struct ProviderMetricRow: Identifiable, Equatable {
         self.periodDuration = periodDuration
         self.supportsPaceMarkers = supportsPaceMarkers
         self.accentStyle = accentStyle
+        self.isUnavailable = isUnavailable
     }
 }
 

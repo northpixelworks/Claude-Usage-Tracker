@@ -74,6 +74,7 @@
 "menubar.5_hour_window" = "5 saatlik kayan pencere";
 "menubar.all_models" = "Tüm modeller";
 "menubar.weekly" = "Haftalık";
+"menubar.no_data_from_anthropic" = "Anthropic'ten veri yok";
 "menubar.anthropic_console" = "Anthropic API Konsolu";
 "menubar.used" = "Kullanılan";
 "menubar.remaining" = "Kalan";

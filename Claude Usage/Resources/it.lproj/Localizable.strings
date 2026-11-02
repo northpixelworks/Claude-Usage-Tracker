@@ -64,6 +64,7 @@
 "menubar.5_hour_window" = "finestra mobile di 5 ore";
 "menubar.all_models" = "Tutti i modelli";
 "menubar.weekly" = "Settimanale";
+"menubar.no_data_from_anthropic" = "Nessun dato da Anthropic";
 "menubar.anthropic_console" = "Console API Anthropic";
 "menubar.used" = "Utilizzato";
 "menubar.remaining" = "Rimanente";

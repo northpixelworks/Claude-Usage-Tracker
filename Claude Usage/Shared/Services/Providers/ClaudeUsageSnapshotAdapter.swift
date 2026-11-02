@@ -35,11 +35,13 @@ enum ClaudeUsageSnapshotAdapter {
             id: "claude-weekly",
             title: "menubar.all_models".localized,
             tag: "menubar.weekly".localized,
+            subtitle: usage.weeklyDataUnavailable ? "menubar.no_data_from_anthropic".localized : nil,
             usedPercentage: usage.weeklyPercentage,
             resetTime: usage.weeklyResetTime,
             periodDuration: Constants.weeklyWindow,
-            supportsPaceMarkers: true,
-            accentStyle: .primary
+            supportsPaceMarkers: !usage.weeklyDataUnavailable,
+            accentStyle: .primary,
+            isUnavailable: usage.weeklyDataUnavailable
         ))
 
         // Claude Design (Weekly) - only if there's usage

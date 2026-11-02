@@ -66,6 +66,7 @@
 "menubar.5_hour_window" = "5時間ローリングウィンドウ";
 "menubar.all_models" = "すべてのモデル";
 "menubar.weekly" = "週次";
+"menubar.no_data_from_anthropic" = "Anthropicからのデータなし";
 "menubar.anthropic_console" = "Anthropic APIコンソール";
 "menubar.used" = "使用済み";
 "menubar.remaining" = "残り";
