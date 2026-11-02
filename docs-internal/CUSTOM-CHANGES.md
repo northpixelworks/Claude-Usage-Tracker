@@ -493,8 +493,8 @@ Same strategy as §17: upstream built parallel versions of the fork's provider s
 
 ## 2026-11-02 weekly "no data from Anthropic" state
 
-- Anthropic's `/api/oauth/usage` now returns `seven_day.utilization = 0` with `limits[{kind:"weekly_all", is_active:false}]` while real usage is metered elsewhere (dollar bucket `iguana_necktie`). The app showed this as an empty 0% weekly battery.
-- `ClaudeAPIService.parseUsageResponse` sets the new `ClaudeUsage.weeklyDataUnavailable` when weekly is 0 and `weekly_all` is inactive (tolerant decode, defaults false).
+- Anthropic's `/api/oauth/usage` now returns `seven_day.utilization = 0` together with `limits[{kind:"weekly_all", percent:0, is_active:false}]`. The app showed this as an empty 0% weekly battery. What `is_active:false` means in practice is not documented. The response also contains a dollar bucket `iguana_necktie` (e.g. $59/$250, own reset date), but nothing marks it as weekly; that usage moved there is a hypothesis, not established, so it is not shown as weekly.
+- `ClaudeAPIService.isWeeklyDataUnavailable` (used by `parseUsageResponse`) sets the new `ClaudeUsage.weeklyDataUnavailable` only when `seven_day` is 0 AND an inactive `weekly_all` entry also reports `percent` 0. Any non-zero weekly figure from either source is shown normally (tolerant decode, defaults false).
 - `ClaudeUsageSnapshotAdapter` marks the weekly row `isUnavailable` (new `ProviderMetricRow` field), adds the subtitle `menubar.no_data_from_anthropic` (13 languages) and disables pace markers.
 - Menu bar battery: dashed outline with "n/a" inside, no fill/markers; tooltips say "No data from Anthropic". Popover row shows "–" in grey.
-- Reverts itself automatically once Anthropic marks the weekly limit active again. Tests: `ProviderModelsTests` (adapter flag, old-data decode).
+- Reverts itself automatically once Anthropic marks the weekly limit active again or reports a non-zero weekly figure. Tests: `ProviderModelsTests` (parser rule incl. non-zero `weekly_all.percent`, adapter flag, old-data decode).

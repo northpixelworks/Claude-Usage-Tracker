@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Weekly usage "no data" state**: Anthropic's usage endpoint now reports `seven_day` as 0 with an inactive `weekly_all` limit. The app no longer shows a misleading 0 %; the menu bar battery shows a dashed outline with "n/a", tooltips say "No data from Anthropic", and the popover row shows a grey "–" (13 languages).
+- **Weekly usage "no data" state**: Anthropic's usage endpoint now reports `seven_day` as 0 with an inactive `weekly_all` limit. The app no longer shows a misleading 0 %; the menu bar battery shows a dashed outline with "n/a", tooltips say "No data from Anthropic", and the popover row shows a grey "–" (13 languages). The state only triggers when every weekly figure is zero; any non-zero weekly value from either `seven_day` or `limits[]` is still shown.
 - **Flaky hook-server tests**: `NotchHookServerTests` no longer fails intermittently with connection refused on port 19847; setUp/tearDown now wait for the server to report `.running` / `.stopped` instead of trusting stale status from the previous test.
 - **Account isolation**: Automatic CLI sync and fallback now require matching token continuity; unrelated logins cannot overwrite other profiles.
 - **Credential storage**: Migrate profile secrets into the encrypted macOS login Keychain, verifying the copy before removing plaintext preferences. Preserve the previous save if Keychain access fails.

@@ -896,17 +896,10 @@ class ClaudeAPIService: APIServiceProtocol {
             //  "scope":{"model":{"id":null,"display_name":"Fable"}}}
             // limits[] is therefore the source of truth: when an entry is
             // present it overrides whatever the legacy fields said.
-            // Since ~Nov 2026 the API can mark the weekly limit inactive
-            // ({"kind":"weekly_all","is_active":false}) and report seven_day
-            // as a flat 0 while real usage is metered elsewhere. Flag it so the
-            // UI says "no data" rather than showing a confidently empty bar.
-            var weeklyDataUnavailable = false
-            if weeklyPercentage == 0, let limits = json["limits"] as? [[String: Any]] {
-                weeklyDataUnavailable = limits.contains { limit in
-                    limit["kind"] as? String == "weekly_all"
-                        && (limit["is_active"] as? Bool) == false
-                }
-            }
+            let weeklyDataUnavailable = Self.isWeeklyDataUnavailable(
+                limits: json["limits"] as? [[String: Any]],
+                legacyWeeklyPercentage: weeklyPercentage
+            )
 
             if let limits = json["limits"] as? [[String: Any]] {
                 for limit in limits {
@@ -997,6 +990,22 @@ class ClaudeAPIService: APIServiceProtocol {
             isRecoverable: false,
             recoverySuggestion: "Please check the error log and report this issue"
         )
+    }
+
+    /// Since ~Nov 2026 the API can mark the weekly limit inactive
+    /// (`{"kind":"weekly_all","is_active":false}`) while reporting 0% both in
+    /// `seven_day` and in that limit entry. Whether usage is then tracked
+    /// elsewhere is not established, so the UI says "no data" instead of a
+    /// confidently empty bar. Any non-zero weekly figure from either source
+    /// counts as real data and is never hidden.
+    static func isWeeklyDataUnavailable(limits: [[String: Any]]?, legacyWeeklyPercentage: Double) -> Bool {
+        guard legacyWeeklyPercentage == 0, let limits else { return false }
+        return limits.contains { limit in
+            guard limit["kind"] as? String == "weekly_all",
+                  (limit["is_active"] as? Bool) == false else { return false }
+            let percent = (limit["percent"] as? NSNumber)?.doubleValue ?? 0
+            return percent == 0
+        }
     }
 
     // MARK: - Rate Limit Header Parsing

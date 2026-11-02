@@ -231,6 +231,27 @@ final class ProviderModelsTests: XCTestCase {
 
     // MARK: - ClaudeUsageSnapshotAdapter Tests
 
+    func testWeeklyUnavailableWhenInactiveAndAllZero() {
+        let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
+        XCTAssertTrue(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 0))
+    }
+
+    func testWeeklyNotHiddenWhenLimitsPercentIsNonZero() {
+        let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 37, "is_active": false]]
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 0))
+    }
+
+    func testWeeklyNotHiddenWhenLegacyPercentIsNonZero() {
+        let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 12))
+    }
+
+    func testWeeklyNotHiddenWhenLimitActiveOrMissing() {
+        let active: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": true]]
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: active, legacyWeeklyPercentage: 0))
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: nil, legacyWeeklyPercentage: 0))
+    }
+
     func testAdapterMarksWeeklyRowUnavailable() {
         var usage = ClaudeUsage.empty
         usage.weeklyDataUnavailable = true
