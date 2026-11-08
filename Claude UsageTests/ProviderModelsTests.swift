@@ -231,25 +231,43 @@ final class ProviderModelsTests: XCTestCase {
 
     // MARK: - ClaudeUsageSnapshotAdapter Tests
 
-    func testWeeklyUnavailableWhenInactiveAndAllZero() {
+    func testWeeklyUnavailableWhenZeroAfterEarlierUsageThisWeek() {
         let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
-        XCTAssertTrue(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 0))
+        XCTAssertTrue(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 0, earlierPercentThisWeek: 11))
+    }
+
+    func testFreshWeekZeroIsShownAsZero() {
+        // After a weekly reset Anthropic reports 0 with is_active:false: real data, not a gap.
+        let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 0, earlierPercentThisWeek: 0))
     }
 
     func testWeeklyNotHiddenWhenLimitsPercentIsNonZero() {
         let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 37, "is_active": false]]
-        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 0))
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 0, earlierPercentThisWeek: 40))
     }
 
     func testWeeklyNotHiddenWhenLegacyPercentIsNonZero() {
         let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
-        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 12))
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: limits, legacyWeeklyPercentage: 12, earlierPercentThisWeek: 40))
     }
 
     func testWeeklyNotHiddenWhenLimitActiveOrMissing() {
         let active: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": true]]
-        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: active, legacyWeeklyPercentage: 0))
-        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: nil, legacyWeeklyPercentage: 0))
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: active, legacyWeeklyPercentage: 0, earlierPercentThisWeek: 40))
+        XCTAssertFalse(ClaudeAPIService.isWeeklyDataUnavailable(limits: nil, legacyWeeklyPercentage: 0, earlierPercentThisWeek: 40))
+    }
+
+    func testHighWaterMarkFlagsDropOnlyWithinSameWeek() {
+        let marks = ClaudeAPIService.WeeklyHighWaterMarks()
+        let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
+        let week1 = Date(timeIntervalSince1970: 1_800_000_000)
+        let week2 = week1.addingTimeInterval(7 * 86400)
+        XCTAssertFalse(marks.evaluate(accountKey: "a", weeklyResetTime: week1, weeklyPercentage: 0, limits: limits))
+        XCTAssertFalse(marks.evaluate(accountKey: "a", weeklyResetTime: week1, weeklyPercentage: 11, limits: limits))
+        XCTAssertTrue(marks.evaluate(accountKey: "a", weeklyResetTime: week1.addingTimeInterval(0.4), weeklyPercentage: 0, limits: limits))
+        XCTAssertFalse(marks.evaluate(accountKey: "b", weeklyResetTime: week1, weeklyPercentage: 0, limits: limits))
+        XCTAssertFalse(marks.evaluate(accountKey: "a", weeklyResetTime: week2, weeklyPercentage: 0, limits: limits))
     }
 
     func testAdapterMarksWeeklyRowUnavailable() {

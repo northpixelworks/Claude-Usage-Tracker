@@ -482,7 +482,7 @@ class ClaudeAPIService: APIServiceProtocol {
         async let creditGrantTask: Data? = performRequest(endpoint: "/organizations/\(organizationId)/overage_credit_grant", sessionKey: sessionKey)
 
         let usageData = try await usageDataTask
-        var claudeUsage = try parseUsageResponse(usageData)
+        var claudeUsage = try parseUsageResponse(usageData, accountKey: organizationId)
 
         if let data = try? await overageDataTask,
            let overage = try? JSONDecoder().decode(OverageSpendLimitResponse.self, from: data),
@@ -526,7 +526,7 @@ class ClaudeAPIService: APIServiceProtocol {
             )
         }
 
-        return try parseUsageResponse(data)
+        return try parseUsageResponse(data, accountKey: "oauth")
     }
 
     /// Fetches real usage data from Claude's API
@@ -546,7 +546,7 @@ class ClaudeAPIService: APIServiceProtocol {
             async let creditGrantTask: Data? = checkOverage ? performRequest(endpoint: "/organizations/\(orgId)/overage_credit_grant", sessionKey: sessionKey) : nil
 
             let usageData = try await usageDataTask
-            var claudeUsage = try parseUsageResponse(usageData)
+            var claudeUsage = try parseUsageResponse(usageData, accountKey: orgId)
 
             if checkOverage,
                let data = try? await overageDataTask,
@@ -813,7 +813,7 @@ class ClaudeAPIService: APIServiceProtocol {
 
     // MARK: - Response Parsing
 
-    private func parseUsageResponse(_ data: Data) throws -> ClaudeUsage {
+    private func parseUsageResponse(_ data: Data, accountKey: String) throws -> ClaudeUsage {
         // Parse Claude's actual API response structure
 
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -896,9 +896,11 @@ class ClaudeAPIService: APIServiceProtocol {
             //  "scope":{"model":{"id":null,"display_name":"Fable"}}}
             // limits[] is therefore the source of truth: when an entry is
             // present it overrides whatever the legacy fields said.
-            let weeklyDataUnavailable = Self.isWeeklyDataUnavailable(
-                limits: json["limits"] as? [[String: Any]],
-                legacyWeeklyPercentage: weeklyPercentage
+            let weeklyDataUnavailable = Self.weeklyHighWaterMarks.evaluate(
+                accountKey: accountKey,
+                weeklyResetTime: weeklyResetTime,
+                weeklyPercentage: weeklyPercentage,
+                limits: json["limits"] as? [[String: Any]]
             )
 
             if let limits = json["limits"] as? [[String: Any]] {
@@ -992,19 +994,50 @@ class ClaudeAPIService: APIServiceProtocol {
         )
     }
 
-    /// Since ~Nov 2026 the API can mark the weekly limit inactive
-    /// (`{"kind":"weekly_all","is_active":false}`) while reporting 0% both in
-    /// `seven_day` and in that limit entry. Whether usage is then tracked
-    /// elsewhere is not established, so the UI says "no data" instead of a
-    /// confidently empty bar. Any non-zero weekly figure from either source
-    /// counts as real data and is never hidden.
-    static func isWeeklyDataUnavailable(limits: [[String: Any]]?, legacyWeeklyPercentage: Double) -> Bool {
-        guard legacyWeeklyPercentage == 0, let limits else { return false }
+    /// Since ~Nov 2026 the API marks the weekly limit inactive
+    /// (`{"kind":"weekly_all","is_active":false}`) as a matter of course, and
+    /// a fresh week legitimately reads 0%. So a 0 only counts as "no data"
+    /// when the same week already showed usage above 0: weekly usage cannot
+    /// go down before its reset, so a drop to 0 is a gap in Anthropic's data
+    /// (seen 2 Nov 2026), not real usage. Any non-zero figure is shown.
+    static func isWeeklyDataUnavailable(
+        limits: [[String: Any]]?,
+        legacyWeeklyPercentage: Double,
+        earlierPercentThisWeek: Double
+    ) -> Bool {
+        guard legacyWeeklyPercentage == 0, earlierPercentThisWeek > 0, let limits else { return false }
         return limits.contains { limit in
             guard limit["kind"] as? String == "weekly_all",
                   (limit["is_active"] as? Bool) == false else { return false }
             let percent = (limit["percent"] as? NSNumber)?.doubleValue ?? 0
             return percent == 0
+        }
+    }
+
+    /// Highest weekly percentage seen per account in the current weekly
+    /// window (in memory only; after an app restart a gap shows as 0%).
+    static let weeklyHighWaterMarks = WeeklyHighWaterMarks()
+
+    final class WeeklyHighWaterMarks {
+        private struct Mark { let resetTime: Date; let percent: Double }
+        private var marks: [String: Mark] = [:]
+        private let lock = NSLock()
+
+        /// Returns whether the weekly figure is a data gap and records real figures.
+        func evaluate(accountKey: String, weeklyResetTime: Date, weeklyPercentage: Double,
+                      limits: [[String: Any]]?) -> Bool {
+            lock.lock(); defer { lock.unlock() }
+            // resets_at carries per-request fractional seconds: same window if within an hour.
+            var earlier = 0.0
+            if let mark = marks[accountKey], abs(mark.resetTime.timeIntervalSince(weeklyResetTime)) < 3600 {
+                earlier = mark.percent
+            }
+            let unavailable = ClaudeAPIService.isWeeklyDataUnavailable(
+                limits: limits, legacyWeeklyPercentage: weeklyPercentage, earlierPercentThisWeek: earlier)
+            if !unavailable {
+                marks[accountKey] = Mark(resetTime: weeklyResetTime, percent: max(earlier, weeklyPercentage))
+            }
+            return unavailable
         }
     }
 
