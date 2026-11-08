@@ -259,7 +259,8 @@ final class ProviderModelsTests: XCTestCase {
     }
 
     func testHighWaterMarkFlagsDropOnlyWithinSameWeek() {
-        let marks = ClaudeAPIService.WeeklyHighWaterMarks()
+        let defaults = UserDefaults(suiteName: "WeeklyHWMTests-\(UUID().uuidString)")!
+        let marks = ClaudeAPIService.WeeklyHighWaterMarks(defaults: defaults)
         let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
         let week1 = Date(timeIntervalSince1970: 1_800_000_000)
         let week2 = week1.addingTimeInterval(7 * 86400)
@@ -268,6 +269,31 @@ final class ProviderModelsTests: XCTestCase {
         XCTAssertTrue(marks.evaluate(accountKey: "a", weeklyResetTime: week1.addingTimeInterval(0.4), weeklyPercentage: 0, limits: limits))
         XCTAssertFalse(marks.evaluate(accountKey: "b", weeklyResetTime: week1, weeklyPercentage: 0, limits: limits))
         XCTAssertFalse(marks.evaluate(accountKey: "a", weeklyResetTime: week2, weeklyPercentage: 0, limits: limits))
+    }
+
+    func testHighWaterMarkSurvivesRestart() {
+        let suite = "WeeklyHWMTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
+        let reset = Date().addingTimeInterval(3 * 86400)
+        XCTAssertFalse(ClaudeAPIService.WeeklyHighWaterMarks(defaults: defaults)
+            .evaluate(accountKey: "a", weeklyResetTime: reset, weeklyPercentage: 40, limits: limits))
+        // New instance = app restart: the gap is still recognised.
+        XCTAssertTrue(ClaudeAPIService.WeeklyHighWaterMarks(defaults: defaults)
+            .evaluate(accountKey: "a", weeklyResetTime: reset, weeklyPercentage: 0, limits: limits))
+    }
+
+    func testExpiredHighWaterMarkIsDroppedOnLoad() {
+        let suite = "WeeklyHWMTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let limits: [[String: Any]] = [["kind": "weekly_all", "percent": 0, "is_active": false]]
+        let oldReset = Date().addingTimeInterval(-3 * 86400)
+        _ = ClaudeAPIService.WeeklyHighWaterMarks(defaults: defaults)
+            .evaluate(accountKey: "a", weeklyResetTime: oldReset, weeklyPercentage: 40, limits: limits)
+        XCTAssertFalse(ClaudeAPIService.WeeklyHighWaterMarks(defaults: defaults)
+            .evaluate(accountKey: "a", weeklyResetTime: oldReset, weeklyPercentage: 0, limits: limits))
     }
 
     func testAdapterMarksWeeklyRowUnavailable() {

@@ -1015,13 +1015,29 @@ class ClaudeAPIService: APIServiceProtocol {
     }
 
     /// Highest weekly percentage seen per account in the current weekly
-    /// window (in memory only; after an app restart a gap shows as 0%).
+    /// window. Kept in UserDefaults so a data gap right after an app restart
+    /// still shows "no data" instead of 0%.
     static let weeklyHighWaterMarks = WeeklyHighWaterMarks()
 
     final class WeeklyHighWaterMarks {
-        private struct Mark { let resetTime: Date; let percent: Double }
-        private var marks: [String: Mark] = [:]
+        static let defaultsKey = "weeklyHighWaterMarks_v1"
+
+        private struct Mark: Codable, Equatable { let resetTime: Date; let percent: Double }
+        private var marks: [String: Mark]
+        private let defaults: UserDefaults
         private let lock = NSLock()
+
+        init(defaults: UserDefaults = .standard) {
+            self.defaults = defaults
+            if let data = defaults.data(forKey: Self.defaultsKey),
+               let stored = try? JSONDecoder().decode([String: Mark].self, from: data) {
+                // Drop windows that ended more than a day ago.
+                let cutoff = Date().addingTimeInterval(-86400)
+                marks = stored.filter { $0.value.resetTime > cutoff }
+            } else {
+                marks = [:]
+            }
+        }
 
         /// Returns whether the weekly figure is a data gap and records real figures.
         func evaluate(accountKey: String, weeklyResetTime: Date, weeklyPercentage: Double,
@@ -1035,7 +1051,17 @@ class ClaudeAPIService: APIServiceProtocol {
             let unavailable = ClaudeAPIService.isWeeklyDataUnavailable(
                 limits: limits, legacyWeeklyPercentage: weeklyPercentage, earlierPercentThisWeek: earlier)
             if !unavailable {
-                marks[accountKey] = Mark(resetTime: weeklyResetTime, percent: max(earlier, weeklyPercentage))
+                let newMark = Mark(resetTime: weeklyResetTime, percent: max(earlier, weeklyPercentage))
+                // Write only for a new window or a higher figure, not for every
+                // refresh (resets_at's per-request fraction alone doesn't count).
+                let old = marks[accountKey]
+                let sameWindow = old.map { abs($0.resetTime.timeIntervalSince(weeklyResetTime)) < 3600 } ?? false
+                if !sameWindow || old?.percent != newMark.percent {
+                    marks[accountKey] = newMark
+                    if let data = try? JSONEncoder().encode(marks) {
+                        defaults.set(data, forKey: Self.defaultsKey)
+                    }
+                }
             }
             return unavailable
         }
