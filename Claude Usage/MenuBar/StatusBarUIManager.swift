@@ -451,7 +451,8 @@ final class StatusBarUIManager {
             useSystemColor: config.useSystemColor,
             showTimeMarker: config.showTimeMarker,
             showPaceMarker: config.showPaceMarker,
-            usePaceColoring: config.usePaceColoring
+            usePaceColoring: config.usePaceColoring,
+            showOrangeWarning: config.showOrangeWarning
         )
 
         let image = multiProfileImage(
@@ -533,8 +534,8 @@ final class StatusBarUIManager {
 
         let primaryPercentage = clampedPercentage(primaryUsed)
         let secondaryPercentage = secondaryRow.map { clampedPercentage($0.usedPercentage ?? 0) }
-        let primaryStatus = statusLevel(for: primaryRow, usePaceColoring: config.usePaceColoring)
-        let secondaryStatus = secondaryRow.map { statusLevel(for: $0, usePaceColoring: config.usePaceColoring) } ?? .safe
+        let primaryStatus = statusLevel(for: primaryRow, usePaceColoring: config.usePaceColoring, showOrange: config.showOrangeWarning)
+        let secondaryStatus = secondaryRow.map { statusLevel(for: $0, usePaceColoring: config.usePaceColoring, showOrange: config.showOrangeWarning) } ?? .safe
 
         let primaryElapsed = elapsedFraction(for: primaryRow, enabled: true)
         let secondaryElapsed = secondaryRow.flatMap { elapsedFraction(for: $0, enabled: true) }
@@ -677,11 +678,12 @@ final class StatusBarUIManager {
         )
     }
 
-    private func statusLevel(for row: ProviderMetricRow, usePaceColoring: Bool) -> UsageStatusLevel {
+    private func statusLevel(for row: ProviderMetricRow, usePaceColoring: Bool, showOrange: Bool) -> UsageStatusLevel {
         UsageStatusCalculator.calculateStatus(
             usedPercentage: clampedPercentage(row.usedPercentage ?? 0),
             showRemaining: false,
-            elapsedFraction: usePaceColoring ? elapsedFraction(for: row, enabled: true) : nil
+            elapsedFraction: usePaceColoring ? elapsedFraction(for: row, enabled: true) : nil,
+            showOrange: showOrange
         )
     }
 

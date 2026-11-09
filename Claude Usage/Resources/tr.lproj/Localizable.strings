@@ -460,6 +460,8 @@
 "appearance.show_time_marker_description" = "İlerleme çubuklarında zaman diliminin ne kadarının geçtiğini gösteren bir işaret göster";
 "appearance.pace_coloring_title" = "Tempo Duyarlı Renklendirme";
 "appearance.pace_coloring_description" = "Göstergeleri tahmini kullanım temposuna göre renklendir. Kapalıyken renkler yalnızca mevcut kullanımı yansıtır.";
+"appearance.orange_warning_title" = "Turuncu Uyarı";
+"appearance.orange_warning_description" = "Zaman eğrisinin hemen gerisindeyken turuncu göster. Kapalıyken çubuklar yalnızca yeşil (tempoda veya geride) ya da kırmızı (eğrinin önünde) olur.";
 "appearance.pace_marker_section_title" = "Tempo İşaretçisi";
 "appearance.pace_marker_section_subtitle" = "Sıfırlama dönemlerine göre kullanım temposunu takip edin";
 "appearance.show_pace_marker_title" = "İşaretçiyi Tempoya Göre Renklendir";

@@ -37,6 +37,7 @@ final class MenuBarIconRenderer {
             apiUsage: apiUsage,
             showRemaining: globalConfig.showRemainingPercentage,
             usePaceColoring: globalConfig.usePaceColoring,
+            showOrange: globalConfig.showOrangeWarning,
             periodDuration: periodDuration
         )
 
@@ -174,6 +175,7 @@ final class MenuBarIconRenderer {
         apiUsage: APIUsage?,
         showRemaining: Bool,
         usePaceColoring: Bool = true,
+        showOrange: Bool = false,
         periodDuration: TimeInterval? = nil
     ) -> MetricData {
         switch metricType {
@@ -193,7 +195,8 @@ final class MenuBarIconRenderer {
             let statusLevel = UsageStatusCalculator.calculateStatus(
                 usedPercentage: usedPercentage,
                 showRemaining: showRemaining,
-                elapsedFraction: sessionElapsed
+                elapsedFraction: sessionElapsed,
+                showOrange: showOrange
             )
 
             return MetricData(
@@ -219,7 +222,8 @@ final class MenuBarIconRenderer {
             let statusLevel = UsageStatusCalculator.calculateStatus(
                 usedPercentage: usedPercentage,
                 showRemaining: showRemaining,
-                elapsedFraction: weekElapsed
+                elapsedFraction: weekElapsed,
+                showOrange: showOrange
             )
 
             let displayText: String
@@ -254,7 +258,8 @@ final class MenuBarIconRenderer {
             )
             let statusLevel = UsageStatusCalculator.calculateStatus(
                 usedPercentage: usedPercentage,
-                showRemaining: showRemaining
+                showRemaining: showRemaining,
+                showOrange: showOrange
             )
 
             let displayText: String

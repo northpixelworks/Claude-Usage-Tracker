@@ -441,6 +441,8 @@
 "appearance.show_pace_marker_description" = "Colore o marcador de tempo pelo ritmo de uso projetado (verde → roxo). Aplica-se a métricas de sessão e semanais.";
 "appearance.pace_coloring_title" = "Cores de barra por ritmo";
 "appearance.pace_coloring_description" = "Colorir barras de progresso com base no ritmo projetado em vez do nível de uso atual. Projeta se você atingirá os limites até o final do período.";
+"appearance.orange_warning_title" = "Alerta laranja";
+"appearance.orange_warning_description" = "Mostrar laranja quando você está logo atrás da curva de tempo. Desativado: barras só verdes (no ritmo ou abaixo) ou vermelhas (à frente da curva).";
 "appearance.multiprofile_locked_title" = "Configurações de Aparência Bloqueadas";
 "appearance.multiprofile_locked_description" = "Estas configurações estão desativadas enquanto a Exibição Multi-Perfil está ativa. Cada perfil usa sua própria aparência no modo multi-perfil.";
 "appearance.disable_multiprofile" = "Desativar Exibição Multi-Perfil";

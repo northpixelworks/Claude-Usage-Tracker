@@ -5,6 +5,10 @@ This file helps track what we've changed so upstream merges stay manageable.
 
 ---
 
+## Red/green pace colors — 2026-11-09
+
+Menu bar icon and popover bars turn red only when usage is ahead of the time curve (used% > elapsed%, projected > 1.0); otherwise green. Orange is optional via the new "Orange Warning" toggle (`showOrangeWarning`, per profile and multi-profile, default off); when on, orange = projected 0.85–1.0. Warm-up (first 15% of the period unless projected ≥ 1.5) kept; fallback without pace: red from 90% used. `UsageStatusCalculator.calculateStatus` gained `showOrange` (default true, so upstream tests stay valid). Statusline gradient and 6-tier pace marker unchanged. Spec: [PRD](done/2026-11-09-red-green-pace-coloring.md).
+
 ## API menu bar data — 2026-09-24
 
 Multi-profile API indicators now receive billing data from their own provider snapshot instead of an unconditional nil value. Available API balances display normally; genuinely missing data remains N/A. API tooltips include the remaining balance. Regression coverage checks populated, missing, and isolated per-profile billing data.

@@ -220,6 +220,21 @@ struct ManageProfilesView: View {
                                 )
                             )
 
+                            // Fork: optional orange warning (off = green/red only)
+                            SettingToggle(
+                                title: "appearance.orange_warning_title".localized,
+                                description: "appearance.orange_warning_description".localized,
+                                isOn: Binding(
+                                    get: { profileManager.multiProfileConfig.showOrangeWarning },
+                                    set: { showOrange in
+                                        var config = profileManager.multiProfileConfig
+                                        config.showOrangeWarning = showOrange
+                                        profileManager.updateMultiProfileConfig(config)
+                                        NotificationCenter.default.post(name: .multiProfileConfigChanged, object: nil)
+                                    }
+                                )
+                            )
+
                             // Info message
                             HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: "info.circle.fill")

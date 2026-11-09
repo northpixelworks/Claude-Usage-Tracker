@@ -458,6 +458,8 @@
 "appearance.show_pace_marker_description" = "Color the time marker based on projected usage pace (green → purple). Applies to session and weekly metrics.";
 "appearance.pace_coloring_title" = "Pace-Aware Bar Colors";
 "appearance.pace_coloring_description" = "Color progress bars based on projected pace instead of current usage level. Projects whether you'll hit limits by the end of the period.";
+"appearance.orange_warning_title" = "Orange Warning";
+"appearance.orange_warning_description" = "Show orange when you're close behind the time curve. When off, bars are only green (on or behind pace) or red (ahead of the time curve).";
 "appearance.multiprofile_locked_title" = "Appearance Settings Locked";
 "appearance.multiprofile_locked_description" = "These settings are disabled while Multi-Profile Display is active. Each profile uses its own appearance in multi-profile mode.";
 "appearance.disable_multiprofile" = "Turn Off Multi-Profile Display";

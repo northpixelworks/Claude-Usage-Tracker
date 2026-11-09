@@ -451,6 +451,8 @@
 "appearance.show_pace_marker_description" = "予測使用ペースに基づいてタイムマーカーを色分けします（緑→紫）。セッションと週間メトリクスに適用されます。";
 "appearance.pace_coloring_title" = "ペース対応バーカラー";
 "appearance.pace_coloring_description" = "現在の使用レベルではなく予測ペースに基づいてプログレスバーを色分けします。期間終了までにリミットに達するかを予測します。";
+"appearance.orange_warning_title" = "オレンジ警告";
+"appearance.orange_warning_description" = "時間カーブのすぐ手前でオレンジを表示します。オフの場合、バーは緑（ペース内）か赤（時間カーブより先行）のみです。";
 "appearance.multiprofile_locked_title" = "外観設定がロックされています";
 "appearance.multiprofile_locked_description" = "マルチプロファイル表示がアクティブな間、これらの設定は無効になっています。マルチプロファイルモードでは各プロファイルが独自の外観を使用します。";
 "appearance.disable_multiprofile" = "マルチプロファイル表示をオフにする";

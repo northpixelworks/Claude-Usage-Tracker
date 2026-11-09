@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Red/green pace colors (fork, 2026-11-09)
+
+- **Red only when ahead of the time curve**: menu bar icon and popover bars are red only when used% is above elapsed time%, green otherwise.
+- **Orange Warning setting** (default off): optional orange band when you're close behind the curve (projected 85–100%).
+
 ### Upstream sync → v3.3.0 (selective, 2026-09-29)
 
 - **Tracker no longer goes dormant after sleep**: Profiles remember their Claude account id, so Claude Code's token rotation no longer breaks continuity; an expired token from an idle CLI is refreshed once and written back to the keychain (upstream #268, adapted).

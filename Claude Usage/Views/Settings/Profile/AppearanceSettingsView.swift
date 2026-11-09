@@ -100,6 +100,18 @@ struct AppearanceSettingsView: View {
                                 }
                             )
                         )
+
+                        SettingToggle(
+                            title: "appearance.orange_warning_title".localized,
+                            description: "appearance.orange_warning_description".localized,
+                            isOn: Binding(
+                                get: { configuration.showOrangeWarning },
+                                set: { newValue in
+                                    configuration.showOrangeWarning = newValue
+                                    saveConfiguration()
+                                }
+                            )
+                        )
                     }
                 }
 

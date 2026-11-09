@@ -503,6 +503,13 @@ struct SmartUsageDashboard: View {
         return profileManager.activeProfile?.iconConfig.usePaceColoring ?? true
     }
 
+    private var showOrangeWarning: Bool {
+        if profileManager.displayMode == .multi {
+            return profileManager.multiProfileConfig.showOrangeWarning
+        }
+        return profileManager.activeProfile?.iconConfig.showOrangeWarning ?? false
+    }
+
     private var showPaceMarker: Bool {
         if profileManager.displayMode == .multi {
             return profileManager.multiProfileConfig.showPaceMarker
@@ -529,6 +536,7 @@ struct SmartUsageDashboard: View {
                     showTimeMarker: row.supportsPaceMarkers ? showTimeMarker : false,
                     showPaceMarker: row.supportsPaceMarkers ? showPaceMarker : false,
                     usePaceColoring: row.supportsPaceMarkers ? usePaceColoring : false,
+                    showOrange: showOrangeWarning,
                     timeDisplay: timeDisplay,
                     isUnavailable: row.isUnavailable
                 )
@@ -538,7 +546,7 @@ struct SmartUsageDashboard: View {
             ForEach(snapshot.secondaryCards) { card in
                 switch card.kind {
                 case .apiUsage(let apiUsage):
-                    APIUsageCard(apiUsage: apiUsage, showRemaining: showRemainingPercentage, timeDisplay: timeDisplay)
+                    APIUsageCard(apiUsage: apiUsage, showRemaining: showRemainingPercentage, showOrange: showOrangeWarning, timeDisplay: timeDisplay)
 
                 case .apiCost(let apiUsage):
                     APICostCard(apiUsage: apiUsage)
@@ -611,6 +619,7 @@ struct UsageRow: View {
     var showTimeMarker: Bool = true
     var showPaceMarker: Bool = true
     var usePaceColoring: Bool = true
+    var showOrange: Bool = false
     var timeDisplay: PopoverTimeDisplay = .resetTime
     /// Provider sent no usable figure: show "–" in grey instead of a fake 0%.
     var isUnavailable: Bool = false
@@ -651,7 +660,8 @@ struct UsageRow: View {
         UsageStatusCalculator.calculateStatus(
             usedPercentage: usedPercentage,
             showRemaining: showRemaining,
-            elapsedFraction: usePaceColoring ? rawElapsedFraction : nil
+            elapsedFraction: usePaceColoring ? rawElapsedFraction : nil,
+            showOrange: showOrange
         )
     }
 
@@ -1265,6 +1275,7 @@ struct APICostSourceRow: View {
 struct APIUsageCard: View {
     let apiUsage: APIUsage
     let showRemaining: Bool
+    var showOrange: Bool = false
     var timeDisplay: PopoverTimeDisplay = .resetTime
 
     private var displayPercentage: Double {
@@ -1277,7 +1288,8 @@ struct APIUsageCard: View {
     private var statusLevel: UsageStatusLevel {
         UsageStatusCalculator.calculateStatus(
             usedPercentage: apiUsage.usagePercentage,
-            showRemaining: showRemaining
+            showRemaining: showRemaining,
+            showOrange: showOrange
         )
     }
 

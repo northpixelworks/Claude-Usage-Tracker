@@ -203,4 +203,46 @@ final class UsageStatusCalculatorTests: XCTestCase {
             0.0  // max(0, 100 - 110) = 0
         )
     }
+
+    // MARK: - Fork: red only when ahead of the time curve
+
+    private func pace(_ used: Double, _ t: Double, orange: Bool) -> UsageStatusLevel {
+        UsageStatusCalculator.calculateStatus(
+            usedPercentage: used, showRemaining: false, elapsedFraction: t, showOrange: orange
+        )
+    }
+
+    func testPace_OrangeOff_RedOnlyWhenAhead() {
+        XCTAssertEqual(pace(45, 0.5, orange: false), .safe)
+        XCTAssertEqual(pace(49.9, 0.5, orange: false), .safe)
+        XCTAssertEqual(pace(50, 0.5, orange: false), .safe)      // exactly on the curve
+        XCTAssertEqual(pace(50.5, 0.5, orange: false), .critical) // projected 1.01
+        XCTAssertEqual(pace(80, 0.5, orange: false), .critical)
+        XCTAssertEqual(pace(95, 0.97, orange: false), .safe)     // high usage but behind curve
+    }
+
+    func testPace_OrangeOn_Bands() {
+        XCTAssertEqual(pace(42, 0.5, orange: true), .safe)       // projected 0.84
+        XCTAssertEqual(pace(42.5, 0.5, orange: true), .moderate) // projected 0.85
+        XCTAssertEqual(pace(50, 0.5, orange: true), .moderate)   // projected 1.0
+        XCTAssertEqual(pace(50.5, 0.5, orange: true), .critical) // projected 1.01
+    }
+
+    func testPace_WarmUpKept() {
+        // 10% elapsed, projected 1.2 (< 1.5) -> falls back to used-based thresholds
+        XCTAssertEqual(pace(12, 0.10, orange: false), .safe)
+        // 10% elapsed, projected 1.6 -> pace rule applies early
+        XCTAssertEqual(pace(16, 0.10, orange: false), .critical)
+    }
+
+    func testFallback_OrangeOff() {
+        func s(_ used: Double, _ remaining: Bool) -> UsageStatusLevel {
+            UsageStatusCalculator.calculateStatus(usedPercentage: used, showRemaining: remaining, showOrange: false)
+        }
+        XCTAssertEqual(s(75, false), .safe)
+        XCTAssertEqual(s(89.9, false), .safe)
+        XCTAssertEqual(s(90, false), .critical)
+        XCTAssertEqual(s(90, true), .safe)       // 10% remaining
+        XCTAssertEqual(s(91, true), .critical)
+    }
 }

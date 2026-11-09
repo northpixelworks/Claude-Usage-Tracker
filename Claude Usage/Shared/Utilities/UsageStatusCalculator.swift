@@ -8,26 +8,35 @@ final class UsageStatusCalculator {
     ///   - usedPercentage: The percentage used (0-100)
     ///   - showRemaining: If true, use remaining-based thresholds; if false, use used-based thresholds
     ///   - elapsedFraction: Optional fraction (0-1) of time elapsed in the period; enables pace-aware coloring
+    ///   - showOrange: If false, only green/red are used (fork: red = ahead of the time curve)
     /// - Returns: The appropriate status level
     static func calculateStatus(
         usedPercentage: Double,
         showRemaining: Bool,
-        elapsedFraction: Double? = nil
+        elapsedFraction: Double? = nil,
+        showOrange: Bool = true
     ) -> UsageStatusLevel {
         // Pace-aware logic: project end-of-period usage when enough time has elapsed.
         // For longer billing cycles like Copilot monthly quotas, we still want
         // obviously-ahead usage to color early, even before the usual warm-up.
+        // Fork: red means "ahead of the time curve" (used% > elapsed%, projected > 1.0).
         let u = usedPercentage / 100.0
         if let t = elapsedFraction, t > 0, t < 1.0, u > 0 {
             let projected = u / t
 
             if t >= 0.15 || projected >= 1.5 {
-                switch projected {
-                case ..<0.70:     return .safe
-                case 0.70..<0.90: return .moderate
-                default:          return .critical
-                }
+                if projected > 1.0 { return .critical }
+                if showOrange && projected >= 0.85 { return .moderate }
+                return .safe
             }
+        }
+
+        if !showOrange {
+            // Red/green only: red from 90% used (under 10% remaining)
+            if showRemaining {
+                return max(0, 100 - usedPercentage) >= 10 ? .safe : .critical
+            }
+            return usedPercentage < 90 ? .safe : .critical
         }
 
         if showRemaining {

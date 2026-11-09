@@ -300,6 +300,7 @@ struct MultiProfileDisplayConfig: Codable, Equatable {
     var showTimeMarker: Bool  // If true, show time-elapsed tick mark on progress indicators
     var showPaceMarker: Bool  // If true, color time marker by projected usage pace (6-tier)
     var usePaceColoring: Bool // If true, color indicators based on projected usage pace
+    var showOrangeWarning: Bool // Fork: if false, indicators are only green/red
 
     init(
         iconStyle: MultiProfileIconStyle = .concentric,
@@ -308,7 +309,8 @@ struct MultiProfileDisplayConfig: Codable, Equatable {
         useSystemColor: Bool = false,
         showTimeMarker: Bool = true,
         showPaceMarker: Bool = true,
-        usePaceColoring: Bool = true
+        usePaceColoring: Bool = true,
+        showOrangeWarning: Bool = false
     ) {
         self.iconStyle = iconStyle
         self.showWeek = showWeek
@@ -317,6 +319,7 @@ struct MultiProfileDisplayConfig: Codable, Equatable {
         self.showTimeMarker = showTimeMarker
         self.showPaceMarker = showPaceMarker
         self.usePaceColoring = usePaceColoring
+        self.showOrangeWarning = showOrangeWarning
     }
 
     // MARK: - Codable (Custom decoder for backwards compatibility)
@@ -329,6 +332,7 @@ struct MultiProfileDisplayConfig: Codable, Equatable {
         case showTimeMarker
         case showPaceMarker
         case usePaceColoring
+        case showOrangeWarning
     }
 
     init(from decoder: Decoder) throws {
@@ -342,6 +346,7 @@ struct MultiProfileDisplayConfig: Codable, Equatable {
         showTimeMarker = try container.decodeIfPresent(Bool.self, forKey: .showTimeMarker) ?? true
         showPaceMarker = try container.decodeIfPresent(Bool.self, forKey: .showPaceMarker) ?? false
         usePaceColoring = try container.decodeIfPresent(Bool.self, forKey: .usePaceColoring) ?? false
+        showOrangeWarning = try container.decodeIfPresent(Bool.self, forKey: .showOrangeWarning) ?? false
     }
 
     static var `default`: MultiProfileDisplayConfig {
@@ -358,6 +363,7 @@ struct MenuBarIconConfiguration: Codable, Equatable {
     var showTimeMarker: Bool
     var showPaceMarker: Bool
     var usePaceColoring: Bool
+    var showOrangeWarning: Bool
     var metrics: [MetricIconConfig]
     var multiProfileIconStyle: MultiProfileIconStyle?
 
@@ -369,6 +375,7 @@ struct MenuBarIconConfiguration: Codable, Equatable {
         showTimeMarker: Bool = true,
         showPaceMarker: Bool = true,
         usePaceColoring: Bool = true,
+        showOrangeWarning: Bool = false,
         metrics: [MetricIconConfig] = [
             .sessionDefault,
             .weekDefault,
@@ -383,6 +390,7 @@ struct MenuBarIconConfiguration: Codable, Equatable {
         self.showTimeMarker = showTimeMarker
         self.showPaceMarker = showPaceMarker
         self.usePaceColoring = usePaceColoring
+        self.showOrangeWarning = showOrangeWarning
         self.metrics = metrics
         self.multiProfileIconStyle = multiProfileIconStyle
     }
@@ -398,6 +406,7 @@ struct MenuBarIconConfiguration: Codable, Equatable {
         case showTimeMarker
         case showPaceMarker
         case usePaceColoring
+        case showOrangeWarning
         case metrics
         case multiProfileIconStyle
     }
@@ -418,6 +427,7 @@ struct MenuBarIconConfiguration: Codable, Equatable {
         showTimeMarker = try container.decodeIfPresent(Bool.self, forKey: .showTimeMarker) ?? true
         showPaceMarker = try container.decodeIfPresent(Bool.self, forKey: .showPaceMarker) ?? false
         usePaceColoring = try container.decodeIfPresent(Bool.self, forKey: .usePaceColoring) ?? false
+        showOrangeWarning = try container.decodeIfPresent(Bool.self, forKey: .showOrangeWarning) ?? false
         metrics = try container.decode([MetricIconConfig].self, forKey: .metrics)
         multiProfileIconStyle = try container.decodeIfPresent(MultiProfileIconStyle.self, forKey: .multiProfileIconStyle)
     }
@@ -431,6 +441,7 @@ struct MenuBarIconConfiguration: Codable, Equatable {
         try container.encode(showTimeMarker, forKey: .showTimeMarker)
         try container.encode(showPaceMarker, forKey: .showPaceMarker)
         try container.encode(usePaceColoring, forKey: .usePaceColoring)
+        try container.encode(showOrangeWarning, forKey: .showOrangeWarning)
         try container.encode(metrics, forKey: .metrics)
         try container.encodeIfPresent(multiProfileIconStyle, forKey: .multiProfileIconStyle)
         // Note: We don't encode monochromeMode anymore - it's only for reading legacy data

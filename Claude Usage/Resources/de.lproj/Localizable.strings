@@ -437,6 +437,8 @@
 "appearance.show_pace_marker_description" = "Die Zeitmarkierung nach dem prognostizierten Nutzungstempo einfärben (grün → lila). Gilt für Sitzungs- und Wochenmetriken.";
 "appearance.pace_coloring_title" = "Tempobasierte Balkenfarben";
 "appearance.pace_coloring_description" = "Fortschrittsbalken basierend auf dem prognostizierten Tempo statt dem aktuellen Nutzungsniveau einfärben. Prognostiziert, ob Limits bis zum Ende des Zeitraums erreicht werden.";
+"appearance.orange_warning_title" = "Orange Warnstufe";
+"appearance.orange_warning_description" = "Orange anzeigen, wenn du knapp hinter der Zeitkurve liegst. Aus: Balken sind nur grün (im oder unter Plan) oder rot (vor der Zeitkurve).";
 "appearance.multiprofile_locked_title" = "Darstellungseinstellungen gesperrt";
 "appearance.multiprofile_locked_description" = "Diese Einstellungen sind deaktiviert, während die Mehrfach-Profil-Anzeige aktiv ist. Jedes Profil verwendet im Mehrfach-Profil-Modus seine eigene Darstellung.";
 "appearance.disable_multiprofile" = "Mehrfach-Profil-Anzeige ausschalten";
